@@ -148,10 +148,10 @@ function slots(){const o=tmin(S.horse.outT),n=tmin(S.horse.inT),B=[];
  for(let k=-1;k<=3;k++)[[o,1],[n,0]].forEach(([t,day])=>{const d=new Date();d.setDate(d.getDate()+k);d.setHours(Math.floor(t/60),t%60,0,0);B.push({d,day})});
  B.sort((x,y)=>x.d-y.d);const now=new Date();let i=0;B.forEach((x,k)=>{if(x.d<=now)i=k});
  const out=[];if(B[i+1]&&B[i+1].d-now>=45*6e4)out.push({a:now,b:B[i+1].d,day:B[i].day,first:1});
- for(let k=i+1;k<B.length-1&&out.length<4;k++)out.push({a:B[k].d,b:B[k+1].d,day:B[k].day});return out}
+ for(let k=i+1;k<B.length-1&&out.length<3;k++)out.push({a:B[k].d,b:B[k+1].d,day:B[k].day});return out}
 const wd=d=>new Date(d).toLocaleDateString('de-DE',{weekday:'long'});
 const slotLab=t=>(t.first||dayWord(t.a)==='heute'?'Heute':wd(t.a))+(t.day?' am Tag':' in der Nacht');
-const slotFor=t=>t.first&&!t.day?'diese Nacht':slotLab(t).replace(/^Heute/,'heute');
+const slotFor=t=>t.first&&!t.day?'Diese Nacht':slotLab(t);
 // Wetterart eines Zeitabschnitts für das Symbol
 function wkind(a,b){if(!W)return'clear';let n=0,rain=0,tm=0,cl=0;
  W.time.forEach((t,k)=>{const d=new Date(t);if(d>a-36e5&&d<b){n++;rain+=W.precipitation[k]||0;tm+=W.temperature_2m[k];cl+=(W.cloud_cover?W.cloud_cover[k]:0)||0}});
@@ -170,7 +170,7 @@ function wico(day,k,z){z=z||30;if(k!=='rain'&&k!=='snow')return'';
 function tileHTML(i,t,w,sel,lab,sub,wide,extra,pre){
  const day=t?t.day:isDayAt(new Date((w.a.getTime()+w.b.getTime())/2)),ic=wico(day,wkind(w.a,w.b));
  const R=w.res.err?null:recommend(w.res);
- return`<div class="tile${wide?' wide':''}${sel?' on':''}" onclick="setWin(${i})">${t?'':`<div class="tl">${ic}<b>${lab}</b></div>`}${extra||''}${sub?`<div class="mut">${sub}</div>`:''}<div class="tb">${t?ic:''}${pre||''}${R?esc(R.best.b.name):'keine Wetterdaten'}</div></div>`}
+ return`<div class="tile${wide?' wide':''}${sel?' on':''}" onclick="setWin(${i})">${t?'':`<div class="tl">${ic}<b>${lab}</b></div>`}${extra||''}${sub?`<div class="mut">${sub}</div>`:''}<div class="tb">${t?ic:''}${pre||''}${R?`<b>${esc(R.best.b.name)}</b>`:'keine Wetterdaten'}</div></div>`}
 function setWin(i){const was=(ACT===i&&SHOW);ACT=i;WHY=false;SHOW=!was;drawToday()}
 function toggleWhy(){WHY=!WHY;drawToday()}
 const fdt=d=>new Date(d).toLocaleString('de-DE',{weekday:'long',hour:'2-digit',minute:'2-digit'});
@@ -179,7 +179,7 @@ function drawToday(){
  const win=ACT>=0?SL[ACT]:null,el=$('#v-today'),w=win?analyse(win.a,win.b):analyse(),m=S.manual;
  const cf=fromBase(),ct=new Date(S.visit),cw={a:cf,b:ct,res:analyse()};
  const inp=`<div class="dt1" onclick="event.stopPropagation()"><span>von jetzt bis</span><input type="datetime-local" value="${S.visit}" onchange="setVisit(this.value)"></div>`;
- let h=hero()+`<div class="card"><div class="stk">${tileHTML(-1,null,cw,SHOW&&ACT===-1,'Decke bis zum nächsten Stallbesuch','',1,inp,'Decke: ')}${SL.map((t,i)=>tileHTML(i,t,{a:t.a,b:t.b,res:analyse(t.a,t.b)},SHOW&&ACT===i,slotLab(t),'',0,'','Decke für '+slotFor(t)+': ')).join('')}</div></div>`;
+ let h=hero()+`<div class="card"><h2>Decke Empfehlung</h2><div class="stk">${tileHTML(-1,null,cw,SHOW&&ACT===-1,'Decke bis zum nächsten Stallbesuch','',1,inp)}${SL.map((t,i)=>tileHTML(i,t,{a:t.a,b:t.b,res:analyse(t.a,t.b)},SHOW&&ACT===i,slotLab(t),'',0,'',slotFor(t)+': ')).join('')}</div></div>`;
  if(err||!W)h+=`<div class="card"><p class="warn">${esc(err)}</p><h2>Wetter manuell</h2><div class="g2">
  <div><label>Tiefste gefühlte °C</label><input type="number" value="${m.minA}" onchange="S.manual.minA=this.value;save();drawToday()"></div>
  <div><label>Höchste °C</label><input type="number" value="${m.maxT}" onchange="S.manual.maxT=this.value;save();drawToday()"></div>
@@ -196,8 +196,8 @@ function drawToday(){
  if(!b.none)h+=`<div class="mut">${b.layers===2?'Zwei Schichten':esc(TYPES[b.type]||'')} · ${b.grams||0} g · geeignet ${r0(q.lo)} bis ${r0(q.hi)} °C für dein Pferd</div>`;
  h+=`<div style="margin-top:6px"><span class="tag">gefühlt min ${r0(w.minA)} °C</span><span class="tag">max ${r0(w.maxT)} °C</span><span class="tag">Wind ${r0(w.wind)} km/h</span><span class="tag">Regen ${w.rain.toFixed(1)} mm (${r0(w.prob)} %)</span>${w.sunMax>0?`<span class="tag">Sonne ${w.sunMax>=300?'stark':w.sunMax>=120?'mäßig':'schwach'}</span>`:''}</div>`;
  const airy=(big||q.hot>2)?R.all.find(x=>!x.b.none&&['sweat','fleece'].includes(x.b.type)&&x.b.name!==b.name):null;
- if(R.alt)h+=`<div class="mut">Alternative: ${esc(R.alt.b.name)}${R.alt.cold>q.cold+.25?' (kann zu kalt sein)':R.alt.hot>q.hot+.25?' (kann zu warm sein)':''}</div>`;
- if(airy)h+=`<div class="mut">Luftig (staut keine Wärme): ${esc(airy.b.name)}</div>`;
+ if(R.alt)h+=`<div class="mut">Alternative: <b>${esc(R.alt.b.name)}</b>${R.alt.cold>q.cold+.25?' (kann zu kalt sein)':R.alt.hot>q.hot+.25?' (kann zu warm sein)':''}</div>`;
+ if(airy)h+=`<div class="mut">Luftig (staut keine Wärme): <b>${esc(airy.b.name)}</b></div>`;
  h+=`<div class="mut" style="margin-top:6px">${WHY?'▲ Warum? (antippen zum Schließen)':'▼ Warum? (antippen)'}</div>`;
  if(WHY){h+=`<ul><li>Für dein Pferd (${S.horse.coat==='long'?'langhaarig':S.horse.coat==='full'?'Vollschur':'Teilschur'}) fühlt sich der Zeitraum so an:</li>`;
  R.segs.forEach(g=>{h+=`<li>${g.box?'In der Box':'Draußen'}: ${r0(g.eMin)} bis ${r0(g.eMax)} °C${g.wet?' · Regen':''}${g.windy?' · starker Wind':''}</li>`});
