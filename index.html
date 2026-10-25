@@ -11,7 +11,8 @@ main{max-width:560px;margin:0 auto;padding:12px}
 .hero{border-radius:14px;margin-bottom:12px;min-height:72px;background:var(--ac) center/cover;color:#fff;display:flex;align-items:flex-end;padding:12px;font-weight:700;font-size:1.25rem;text-shadow:0 1px 4px rgba(0,0,0,.6)}
 .ampel{border-left:10px solid var(--g)}details{margin-top:8px}summary{cursor:pointer;color:var(--mut);padding:8px 0}
 button,input,select{min-height:46px}input[type=checkbox]{min-height:0;width:20px;height:20px;vertical-align:middle}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:10px}
+.dt{display:grid;grid-template-columns:2.2rem minmax(0,1fr) 6.2rem;gap:6px;align-items:center;margin-top:6px}.dt select,.dt input{min-height:42px;padding:6px 8px;font-size:.9rem;min-width:0}.dt span{font-size:.85rem;color:var(--mut)}.tile.wide{grid-column:1/-1}
 h2{margin:0 0 8px;font-size:1.05rem}label{display:block;font-size:.85rem;color:var(--mut);margin:10px 0 3px}
 input,select,textarea,button{font:inherit;color:var(--tx)}
 input,select,textarea{width:100%;padding:9px;border:1px solid var(--bd);border-radius:9px;background:var(--bg)}
@@ -136,18 +137,19 @@ function recommend(w){
  if(segs.length===2){const ev=segs.map(sg=>evaluate([sg]));
   const chg=(a,b)=>{const A=new Set(a.parts),B=new Set(b.parts);return[...A].filter(x=>!B.has(x)).length+[...B].filter(x=>!A.has(x)).length};
   let bt=1e9;for(const a of ev[0])for(const b of ev[1]){const t=a.score+b.score+.7*chg(a.b,b.b);if(t<bt){bt=t;plan={a,b,seg:[segs[0],segs[1]],chg:chg(a.b,b.b)}}}}
- return{best:c[0],alt:c[1],segs,plan,mixed:segs.length>1,eMin,eMax,wet:segs.some(s=>s.wet),windy:segs.some(s=>s.windy)}}
+ return{best:c[0],alt:c[1],all:c,segs,plan,mixed:segs.length>1,eMin,eMax,wet:segs.some(s=>s.wet),windy:segs.some(s=>s.windy)}}
 
 const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
-const amp=q=>{const bad=q.cold>2.5||q.pen>=6,mid=q.cold>0||q.hot>2||q.pen>0;return{bad,mid,col:bad?'#c4472f':mid?'#d9a521':'#3a9d5d'}};
-let SL=[],WHY=false;
+const amp=(q,span)=>{const bad=q.pen>=6||(q.cold>2.5&&!(span>=10)),mid=q.cold>0||q.hot>2||q.pen>0;return{bad,mid,col:bad?'#c4472f':mid?'#d9a521':'#3a9d5d'}};
+let SL=[],WHY=false,ACT=-1; // ACT: -1 = eigener Zeitraum (Von/Bis), sonst Nummer des Halbtags
 const isDayAt=d=>{const o=tmin(S.horse.outT),n=tmin(S.horse.inT),t=d.getHours()*60+d.getMinutes();return o<n?(t>=o&&t<n):(t>=o||t<n)};
 function slots(){const o=tmin(S.horse.outT),n=tmin(S.horse.inT),B=[];
  for(let k=-1;k<=3;k++)[[o,1],[n,0]].forEach(([t,day])=>{const d=new Date();d.setDate(d.getDate()+k);d.setHours(Math.floor(t/60),t%60,0,0);B.push({d,day})});
  B.sort((x,y)=>x.d-y.d);const now=new Date();let i=0;B.forEach((x,k)=>{if(x.d<=now)i=k});
  const out=[];if(B[i+1]&&B[i+1].d-now>=45*6e4)out.push({a:now,b:B[i+1].d,day:B[i].day,first:1});
  for(let k=i+1;k<B.length-1&&out.length<4;k++)out.push({a:B[k].d,b:B[k+1].d,day:B[k].day});return out}
-const slotLab=t=>t.first?(t.day?'Heute':'Diese Nacht'):cap(dayWord(t.a))+(t.day?' Tag':' Nacht');
+const wd=d=>new Date(d).toLocaleDateString('de-DE',{weekday:'short'});
+const slotLab=t=>t.first?(t.day?'Heute':'Diese Nacht'):(dayWord(t.a)==='heute'?'Heute':wd(t.a))+(t.day?' Tag':' Nacht');
 // Wetterart eines Zeitabschnitts für das Symbol
 function wkind(a,b){if(!W)return'clear';let n=0,rain=0,tm=0,cl=0;
  W.time.forEach((t,k)=>{const d=new Date(t);if(d>a-36e5&&d<b){n++;rain+=W.precipitation[k]||0;tm+=W.temperature_2m[k];cl+=(W.cloud_cover?W.cloud_cover[k]:0)||0}});
@@ -163,22 +165,30 @@ function wico(day,k,z){z=z||30;
  else if(k==='rain')g=`<g transform="translate(0,-4)">${cloud}</g><g stroke="#4a90d9" stroke-width="1.9" stroke-linecap="round"><path d="M8 17.5l-1 3.5M12.5 17.5l-1 3.5M17 17.5l-1 3.5"/></g>`;
  else g=`<g transform="translate(0,-4)">${cloud}</g><g fill="#7fb3e8"><circle cx="8" cy="19" r="1.5"/><circle cx="12.5" cy="21.5" r="1.5"/><circle cx="17" cy="19" r="1.5"/></g>`;
  return`<svg viewBox="0 0 24 24" width="${z}" height="${z}" style="flex:0 0 ${z}px" aria-hidden="true">${g}</svg>`}
-const winSel=t=>S.visit===loc16(t.b)&&((t.first&&!S.from)||S.from===loc16(t.a));
-function halbtage(){if(!W){SL=[];return''}SL=slots();
- return`<div class="card"><h2>Halbtage</h2><div class="g2">${SL.map((t,i)=>{
-  const w=analyse(t.a,t.b),sel=winSel(t),lab=slotLab(t),ic=wico(t.day,wkind(t.a,t.b));
-  if(w.err)return`<div class="tile${sel?' on':''}" onclick="setWin(${i})"><div class="tl">${ic}<b>${lab}</b></div><div class="mut">keine Wetterdaten</div></div>`;
-  const R=recommend(w),a=amp(R.best);
-  return`<div class="tile${sel?' on':''}" onclick="setWin(${i})"><div class="tl">${ic}<b>${lab}</b></div><div class="tb"><i style="background:${a.col}"></i>${esc(R.best.b.name)}</div></div>`}).join('')}</div></div>`}
-function setWin(i){const t=SL[i];if(!t)return;const was=winSel(t);S.from=t.first?'':loc16(t.a);S.visit=loc16(t.b);WHY=was?!WHY:true;save();drawToday()}
+function tileHTML(i,t,w,sel,lab,sub,wide){
+ const day=t?t.day:isDayAt(new Date((w.a.getTime()+w.b.getTime())/2)),ic=wico(day,wkind(w.a,w.b));
+ if(w.res.err)return`<div class="tile${wide?' wide':''}${sel?' on':''}" onclick="setWin(${i})"><div class="tl">${ic}<b>${lab}</b></div>${sub?`<div class="mut">${sub}</div>`:''}<div class="mut">keine Wetterdaten</div></div>`;
+ const R=recommend(w.res),a=amp(R.best,R.eMax-R.eMin);
+ return`<div class="tile${wide?' wide':''}${sel?' on':''}" onclick="setWin(${i})"><div class="tl">${ic}<b>${lab}</b></div>${sub?`<div class="mut">${sub}</div>`:''}<div class="tb"><i style="background:${a.col}"></i>${esc(R.best.b.name)}</div></div>`}
+const dpart=v=>(v||'').slice(0,10),tpart=v=>(v||'').slice(11,16);
+function dayOpts(val){const o=[],b=new Date();b.setHours(0,0,0,0);
+ for(let k=0;k<6;k++){const d=new Date(b);d.setDate(d.getDate()+k);o.push([loc16(d).slice(0,10),k===0?'Heute':wd(d)+' '+d.getDate()+'.'+(d.getMonth()+1)+'.'])}
+ if(val&&!o.some(x=>x[0]===val)){const d=new Date(val+'T12:00');o.unshift([val,wd(d)+' '+d.getDate()+'.'+(d.getMonth()+1)+'.'])}
+ return o.map(x=>`<option value="${x[0]}"${x[0]===val?' selected':''}>${x[1]}</option>`).join('')}
+function dtRow(id,lab,v,extra){return`<div class="dt"><span>${lab}</span><select id="${id}d" onchange="setDT('${id}')">${dayOpts(dpart(v))}</select><input type="time" id="${id}t" value="${tpart(v)}" onchange="setDT('${id}')"></div>${extra||''}`}
+function setDT(id){const d=$('#'+id+'d').value,t=$('#'+id+'t').value;if(!d||!t)return;const v=d+'T'+t;
+ if(id==='f')S.from=v;else{S.visit=v;S.vt=t}ACT=-1;save();drawToday()}
+function setWin(i){const was=(ACT===i);ACT=i;WHY=was?!WHY:true;drawToday()}
 function toggleWhy(){WHY=!WHY;drawToday()}
 const fdt=d=>new Date(d).toLocaleString('de-DE',{weekday:'short',hour:'2-digit',minute:'2-digit'});
 function drawToday(){
- const el=$('#v-today'),w=analyse(),m=S.manual;
+ SL=W?slots():[];if(ACT>=SL.length)ACT=-1;
+ const win=ACT>=0?SL[ACT]:null,el=$('#v-today'),w=win?analyse(win.a,win.b):analyse(),m=S.manual;
+ const cf=fromBase(),ct=new Date(S.visit),cw={a:cf,b:ct,res:analyse()};
  let h=hero()+`<div class="card"><h2>Zeitraum</h2>
- <div class="g2"><div><label>Von</label><input type="datetime-local" style="font-size:.85rem;padding:9px 4px" value="${S.from||loc16(new Date())}" onchange="setFrom(this.value)"></div>
- <div><label>Bis</label><input type="datetime-local" style="font-size:.85rem;padding:9px 4px" value="${S.visit}" onchange="setVisit(this.value)"></div></div>
- ${S.from?'<button style="background:none;color:var(--ac);padding:6px 0;min-height:0;text-decoration:underline" onclick="setFrom(\'\')">Von = jetzt</button>':''}</div>${halbtage()}`;
+ ${dtRow('f','Von',S.from||loc16(new Date()),S.from?'<button style="background:none;color:var(--ac);padding:2px 0;min-height:0;text-decoration:underline;font-size:.85rem" onclick="setFrom(\'\')">Von = jetzt</button>':'')}
+ ${dtRow('t','Bis',S.visit)}
+ ${W?`<div class="g2" style="margin-top:10px">${tileHTML(-1,null,cw,ACT===-1,'Zeitraum',esc(fdt(cf)+' bis '+fdt(ct)),1)}${SL.map((t,i)=>tileHTML(i,t,{a:t.a,b:t.b,res:analyse(t.a,t.b)},ACT===i,slotLab(t),'',0)).join('')}</div>`:''}</div>`;
  if(err||!W)h+=`<div class="card"><p class="warn">${esc(err)}</p><h2>Wetter manuell</h2><div class="g2">
  <div><label>Tiefste gefühlte °C</label><input type="number" value="${m.minA}" onchange="S.manual.minA=this.value;save();drawToday()"></div>
  <div><label>Höchste °C</label><input type="number" value="${m.maxT}" onchange="S.manual.maxT=this.value;save();drawToday()"></div>
@@ -186,14 +196,16 @@ function drawToday(){
  <div><label>Regen mm</label><input type="number" value="${m.rain}" onchange="S.manual.rain=this.value;save();drawToday()"></div></div>
  ${S.loc?'<div class="row"><button class="s" onclick="load()">Erneut versuchen</button></div>':''}</div>`;
  if(w.err){el.innerHTML=h+`<div class="card warn">${esc(w.err)}</div>`;return}
- const R=recommend(w),b=R.best.b,q=R.best,A=amp(q),lab=A.bad?'Es fehlt eine passende Decke':A.mid?'Kompromiss':'Passt';
- const from=fromBase(),to=new Date(S.visit),ti=SL.findIndex(winSel),title=ti>=0?slotLab(SL[ti]):fdt(from)+' bis '+fdt(to),
+ const R=recommend(w),b=R.best.b,q=R.best,span=R.eMax-R.eMin,A=amp(q,span),big=span>=10,lab=A.bad?'Es fehlt eine passende Decke':A.mid?(big?'Kompromiss (große Temperaturspanne)':'Kompromiss'):'Passt';
+ const from=win?win.a:cf,to=win?win.b:ct,title=win?slotLab(win):'Zeitraum: '+fdt(from)+' bis '+fdt(to),
   ic=W?wico(isDayAt(new Date((from.getTime()+to.getTime())/2)),wkind(from,to)):'';
- h+=`<div class="card ampel" style="--g:${A.col};cursor:pointer" onclick="toggleWhy()"><div class="tl" style="display:flex;align-items:center;gap:8px">${ic}<h2 style="margin:0">${title}</h2></div>
+  h+=`<div class="card ampel" style="--g:${A.col};cursor:pointer" onclick="toggleWhy()"><div class="tl" style="display:flex;align-items:center;gap:8px">${ic}<h2 style="margin:0">${title}</h2></div>
  <div class="mut" style="margin-top:6px">${lab}</div><div class="big">${esc(b.name)}</div>`;
  if(!b.none)h+=`<div class="mut">${b.layers===2?'Zwei Schichten':esc(TYPES[b.type]||'')} · ${b.grams||0} g · geeignet ${r0(q.lo)} bis ${r0(q.hi)} °C für dein Pferd</div>`;
  h+=`<div style="margin-top:6px"><span class="tag">gefühlt min ${r0(w.minA)} °C</span><span class="tag">max ${r0(w.maxT)} °C</span><span class="tag">Wind ${r0(w.wind)} km/h</span><span class="tag">Regen ${w.rain.toFixed(1)} mm (${r0(w.prob)} %)</span>${w.sunMax>0?`<span class="tag">Sonne ${w.sunMax>=300?'stark':w.sunMax>=120?'mäßig':'schwach'}</span>`:''}</div>`;
+ const airy=(big||q.hot>2)?R.all.find(x=>!x.b.none&&['sweat','fleece'].includes(x.b.type)&&x.b.name!==b.name):null;
  if(R.alt)h+=`<div class="mut">Alternative: ${esc(R.alt.b.name)}${R.alt.cold>q.cold+.25?' (kann zu kalt sein)':R.alt.hot>q.hot+.25?' (kann zu warm sein)':''}</div>`;
+ if(airy)h+=`<div class="mut">Luftig (staut keine Wärme): ${esc(airy.b.name)}</div>`;
  h+=`<div class="mut" style="margin-top:6px">${WHY?'▲ Warum? (antippen zum Schließen)':'▼ Warum? (antippen)'}</div>`;
  if(WHY){h+=`<ul><li>Für dein Pferd (${S.horse.coat==='long'?'langhaarig':S.horse.coat==='full'?'Vollschur':'Teilschur'}) fühlt sich der Zeitraum so an:</li>`;
  R.segs.forEach(g=>{h+=`<li>${g.box?'In der Box':'Draußen'}: ${r0(g.eMin)} bis ${r0(g.eMax)} °C${g.wet?' · Regen':''}${g.windy?' · starker Wind':''}</li>`});
@@ -207,9 +219,10 @@ function drawToday(){
   if(nm(ou)!==nm(bx)){const rm=bx.b.parts.filter(i=>!ou.b.parts.includes(i)),ad=ou.b.parts.filter(i=>!bx.b.parts.includes(i));
    h+=`<li>Mit Wechsel: draußen ${nm(ou)}, in der Box ${nm(bx)}. Beim Rausbringen: ${[rm.length?'ausziehen '+rm.map(bn).join(', '):'',ad.length?'anziehen '+ad.map(bn).join(', '):''].filter(Boolean).join('; ')}. Beim Reinholen umgekehrt.</li>`}}
  if(R.eMax-R.eMin>=12)h+='<li>Große Tag-/Nacht-Spanne: Schwitzen oder Frieren ist möglich, ggf. früher am Tag wechseln.</li>';
- if(q.cold>2.5)h+=`<li class="warn">Zu kalt: Dir fehlt eine ${R.wet?'wasserdichte ':''}Decke, die bis ca. ${r0(R.eMin)} °C reicht (für dein Pferd gerechnet).</li>`;
- else if(q.pen>=6)h+='<li class="warn">Keine wasserdichte Decke passt: Dir fehlt eine passende Regendecke.</li>';
- if(q.hot>4)h+='<li class="warn">Eher zu warm: Dir fehlt eine leichtere Decke.</li>';
+ if(big)h+=`<li>Große Spanne von ${r0(R.eMin)} bis ${r0(R.eMax)} °C: nachts kalt, tagsüber warm. Empfohlen ist die beste Mischung${q.cold>2.5?' (in der kältesten Zeit etwas knapp)':''}${airy?'; ' +esc(airy.b.name)+' ist luftiger und staut tagsüber weniger Wärme':''}. Wenn möglich, tagsüber eine Schicht ausziehen.</li>`;
+ else if(q.cold>2.5)h+=`<li class="warn">Zu kalt: Dir fehlt eine ${R.wet?'wasserdichte ':''}Decke, die bis ca. ${r0(R.eMin)} °C reicht (für dein Pferd gerechnet).</li>`;
+ if(q.pen>=6)h+='<li class="warn">Keine wasserdichte Decke passt: Dir fehlt eine passende Regendecke.</li>';
+ if(q.hot>4&&!big)h+='<li class="warn">Eher zu warm: Dir fehlt eine leichtere Decke.</li>';
  h+='</ul>'}
  h+='</div>';
  if(W)h+=`<div class="card"><h2>Wetter${S.loc?' · '+esc(S.loc.name):''}</h2>${bigChart(from,to)}</div>`;
