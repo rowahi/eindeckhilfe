@@ -131,9 +131,13 @@ function drawB(){
   <label><input type="checkbox" id="bwi"${b.wind?' checked':''}>winddicht</label>
   <label><input type="checkbox" id="bne"${b.neck?' checked':''}>Halsteil</label>
   <div class="row"><button onclick="saveB()">Speichern</button><button class="s" onclick="E=null;drawB()">Abbrechen</button>${b.isNew?'':'<button class="d" onclick="delB()">Löschen</button>'}</div></div>`;return}
- el.innerHTML=`<div class="card"><h2>Meine Decken</h2>${S.blankets.map(b=>`<div class="it"><div onclick="editB(${b.id})" style="flex:1"><b>${esc(b.name)}</b><div class="mut">${b.grams} g · ${PLACE[b.place]}${b.waterproof?' · wasserdicht':''}<br>geschoren ${b.minC} bis ${b.maxC} °C · langhaar ${b.minL} bis ${b.maxL} °C</div></div>
+ el.innerHTML=`<div class="card"><h2>Meine Decken</h2>${S.blankets.map(b=>`<div class="it"><div onclick="editB(${b.id})" style="flex:1"><b>${esc(b.name)}</b><div class="mut">${b.grams} g · ${PLACE[b.place]}${b.waterproof?' · wasserdicht':''}<br>${rangeTxt(b)}</div></div>
   <select onchange="setSt(${b.id},this.value)"><option value="ok"${b.status==='ok'?' selected':''}>verfügbar</option><option value="wash"${b.status==='wash'?' selected':''}>in der Wäsche</option><option value="wet"${b.status==='wet'?' selected':''}>nass</option></select></div>`).join('')||'<p class="mut">Noch keine Decken. Lege deine erste an.</p>'}
   <div class="row"><button onclick="editB()">+ Decke hinzufügen</button></div></div>`}
+function rangeTxt(b){const c=S.horse.coat;
+ if(c==='long')return`für ${esc(S.horse.name||'dein Pferd')} (langhaarig): ${b.minL} bis ${b.maxL} °C`;
+ if(c==='full')return`für ${esc(S.horse.name||'dein Pferd')} (Vollschur): ${b.minC} bis ${b.maxC} °C`;
+ return`für ${esc(S.horse.name||'dein Pferd')} (Teilschur): ${r1((b.minL+b.minC)/2)} bis ${r1((b.maxL+b.maxC)/2)} °C`}
 function editB(id){E=id?{...S.blankets.find(b=>b.id===id)}:{id:Date.now(),isNew:1,name:'',type:'rain',grams:0,...def(0),place:'outdoor',waterproof:true,wind:false,neck:false,status:'ok'};drawB()}
 function gch(){const d=def(+$('#bg').value||0);['minC','maxC','minL','maxL'].forEach(k=>$('#b'+k).value=d[k])}
 function saveB(){const n=$('#bn').value.trim();if(!n)return alert('Bitte einen Namen eingeben.');
