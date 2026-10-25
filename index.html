@@ -233,16 +233,16 @@ function bigChart(from,to){if(!W||!SL.length)return'';
  if(ix.length<2)return'';
  const X=t=>10+(Math.min(Math.max(t,t0),t1)-t0)/(t1-t0)*300,A=ix.map(k=>W.apparent_temperature[k]),lo=Math.min(...A),hi=Math.max(...A),sp=Math.max(hi-lo,2),Y=v=>8+(hi-v)/sp*52;
  const pts=ix.map(k=>`${X(new Date(W.time[k]).getTime()).toFixed(1)},${Y(W.apparent_temperature[k]).toFixed(1)}`).join(' ');
- const night=SL.filter(t=>!t.day).map(t=>`<rect x="${X(t.a.getTime()).toFixed(1)}" y="2" width="${(X(t.b.getTime())-X(t.a.getTime())).toFixed(1)}" height="64" fill="var(--ac2)" opacity=".7"/>`).join('');
+ const night=SL.map(t=>`<rect x="${X(t.a.getTime()).toFixed(1)}" y="2" width="${(X(t.b.getTime())-X(t.a.getTime())).toFixed(1)}" height="64" fill="${t.day?'#ffd54a':'#1f3a8a'}" opacity="${t.day?'.14':'.38'}"/>`).join('');
  const sep=SL.slice(1).map(t=>`<line x1="${X(t.a.getTime()).toFixed(1)}" x2="${X(t.a.getTime()).toFixed(1)}" y1="2" y2="66" stroke="var(--bd)"/>`).join('');
  const rain=ix.map(k=>{const r=W.precipitation[k]||0;if(r<=0)return'';const x=X(new Date(W.time[k]).getTime()),hh=Math.min(12,2+r*5);return`<rect x="${(x-1.2).toFixed(1)}" y="${(66-hh).toFixed(1)}" width="2.4" height="${hh.toFixed(1)}" fill="#4a90d9" opacity=".75"/>`}).join('');
  const fx=X(from.getTime()),tx=X(to.getTime());
- const sel=`<rect x="${fx.toFixed(1)}" y="2" width="${Math.max(2,tx-fx).toFixed(1)}" height="64" fill="var(--ac)" opacity=".16" stroke="var(--ac)" stroke-width="1.5" rx="3"/>`;
+ const sel=(SHOW&&ACT>=0)?`<rect x="${fx.toFixed(1)}" y="2" width="${Math.max(2,tx-fx).toFixed(1)}" height="64" fill="var(--ac)" opacity=".16" stroke="var(--ac)" stroke-width="1.5" rx="3"/>`:'';
  const vt=new Date(S.visit).getTime(),vx=X(vt),mk=(vt>=t0&&vt<=t1)?`<line x1="${vx.toFixed(1)}" x2="${vx.toFixed(1)}" y1="4" y2="68" stroke="#d9483b" stroke-width="2" stroke-dasharray="4 2"/><polygon points="${(vx-5).toFixed(1)},0 ${(vx+5).toFixed(1)},0 ${vx.toFixed(1)},7" fill="#d9483b"/><text x="${vx>240?(vx-4).toFixed(1):(vx+4).toFixed(1)}" y="20" font-size="9" font-weight="700" text-anchor="${vx>240?'end':'start'}" fill="#d9483b">Stallbesuch</text>`:'';
  return`<svg viewBox="0 0 320 86" style="width:100%">${night}${sep}${sel}${rain}<polyline points="${pts}" fill="none" stroke="var(--ac)" stroke-width="2.4" stroke-linejoin="round"/>
  <text x="2" y="12" font-size="9" fill="var(--mut)">${r0(hi)}°</text><text x="2" y="64" font-size="9" fill="var(--mut)">${r0(lo)}°</text>
  ${mk}${dayLbl(t0,t1,X)}</svg>
- <p class="mut" style="margin:2px 0 0">Gefühlte Temperatur · blau: Regen · Rahmen: gewählter Zeitraum · rot: Stallbesuch</p>`}
+ <p class="mut" style="margin:2px 0 0">Gefühlte Temperatur · blau: Regen · dunkelblau: Nacht · Rahmen: gewählter Halbtag · rot: Stallbesuch</p>`}
 
 function setVisit(v){if(v){S.visit=v;S.vt=v.slice(11,16);ACT=-1;SHOW=true;WHY=false;save();drawToday()}}
 function inH(n){S.visit=loc16(new Date(fromBase().getTime()+n*36e5));save();drawToday()}
