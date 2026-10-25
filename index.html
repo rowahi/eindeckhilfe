@@ -92,9 +92,12 @@ function recommend(w){
  const baseLo=rg(none)[0],nC=+S.none.minC,nL=+S.none.minL;
  const act=S.blankets.filter(b=>b.status==='ok');
  // Kandidaten: keine Decke, einzelne Decken, Zweierkombinationen (Unterdecke + Oberdecke)
+ const adds=(x,y)=>+x.grams>0||x.minL<nL||x.minC<nC||(x.waterproof&&!y.waterproof)||(x.wind&&!y.wind); // trägt die Decke neben der anderen etwas bei?
  const cand=[none,...act.map(b=>({...b,parts:[b.id],layers:1}))];
  act.forEach(u=>act.forEach(o=>{
-  if(u.id===o.id||!lf(u).under||!lf(o).over||u.waterproof)return; // eine wasserdichte Decke unter einer Regendecke bringt nichts
+  if(u.id===o.id||!lf(u).under||!lf(o).over)return;
+  // beide Decken müssen etwas beitragen (Wärme, Wasser- oder Winddichtigkeit), sonst keine Kombination
+  if(!adds(o,u)||!adds(u,o))return;
   if((u.place==='box'&&o.place==='outdoor')||(u.place==='outdoor'&&o.place==='box'))return;
   const gL=Math.max(0,nL-Math.min(u.minL,nL)),gC=Math.max(0,nC-Math.min(u.minC,nC)); // wie viel die Unterdecke die Kältegrenze nach unten schiebt
   cand.push({id:'c'+u.id+'-'+o.id,name:u.name+' + '+o.name,type:'combo',grams:(+u.grams||0)+(+o.grams||0),
@@ -192,7 +195,7 @@ function drawB(){
   <label><input type="checkbox" id="bne"${b.neck?' checked':''}>Halsteil</label>
   <label><input type="checkbox" id="bun"${lf(b).under?' checked':''}>als Unterdecke nutzbar</label>
   <label><input type="checkbox" id="bov"${lf(b).over?' checked':''}>als Oberdecke nutzbar</label>
-  <p class="mut">Für zwei Schichten: Die Unterdecke darf nicht wasserdicht sein. Die Regendecke kommt darüber.</p>
+  <p class="mut">Für zwei Schichten: Beide Decken müssen etwas beitragen: eine Decke ohne Füllung (0 g) wird nur kombiniert, wenn sie etwas ergänzt, zum Beispiel wasserdicht über einer nicht wasserdichten Decke.</p>
   <div class="row"><button onclick="saveB()">Speichern</button><button class="s" onclick="E=null;drawB()">Abbrechen</button>${b.isNew?'':'<button class="d" onclick="delB()">Löschen</button>'}</div></div>`;return}
  el.innerHTML=`<div class="card"><h2>Meine Decken</h2><div class="it"><div onclick="editN()" style="flex:1"><b>Keine Decke</b><div class="mut">${noneTxt()}</div></div><button class="s" onclick="editN()">Ändern</button></div>${S.blankets.map(b=>`<div class="it"><div onclick="editB(${b.id})" style="flex:1"><b>${esc(b.name)}</b><div class="mut">${b.grams} g · ${COLORS[b.color||'mid'].toLowerCase()} · ${PLACE[b.place]}${lf(b).under&&lf(b).over?' · unten/oben':lf(b).under?' · Unterdecke':' · Oberdecke'}${b.waterproof?' · wasserdicht':''}<br>${rangeTxt(b)}</div></div>
   <select onchange="setSt(${b.id},this.value)"><option value="ok"${b.status==='ok'?' selected':''}>verfügbar</option><option value="wash"${b.status==='wash'?' selected':''}>in der Wäsche</option><option value="wet"${b.status==='wet'?' selected':''}>nass</option></select></div>`).join('')||'<p class="mut">Noch keine Decken. Lege deine erste an.</p>'}
