@@ -92,9 +92,12 @@ function recommend(w){
  const baseLo=rg(none)[0],nC=+S.none.minC,nL=+S.none.minL;
  const act=S.blankets.filter(b=>b.status==='ok');
  // Kandidaten: keine Decke, einzelne Decken, Zweierkombinationen (Unterdecke + Oberdecke)
+ const adds=(x,y)=>+x.grams>0||x.minL<nL||x.minC<nC||(x.waterproof&&!y.waterproof)||(x.wind&&!y.wind); // trägt die Decke neben der anderen etwas bei?
  const cand=[none,...act.map(b=>({...b,parts:[b.id],layers:1}))];
  act.forEach(u=>act.forEach(o=>{
   if(u.id===o.id||!lf(u).under||!lf(o).over)return;
+  // beide Decken müssen etwas beitragen (Wärme, Wasser- oder Winddichtigkeit), sonst keine Kombination
+  if(!adds(o,u)||!adds(u,o))return;
   if((u.place==='box'&&o.place==='outdoor')||(u.place==='outdoor'&&o.place==='box'))return;
   const gL=Math.max(0,nL-Math.min(u.minL,nL)),gC=Math.max(0,nC-Math.min(u.minC,nC)); // wie viel die Unterdecke die Kältegrenze nach unten schiebt
   cand.push({id:'c'+u.id+'-'+o.id,name:u.name+' + '+o.name,type:'combo',grams:(+u.grams||0)+(+o.grams||0),
@@ -185,12 +188,14 @@ function drawB(){
   <div class="g2"><div class="mut">Geschoren von<input id="bminC" type="number" step=".5" value="${b.minC}"></div><div class="mut">bis<input id="bmaxC" type="number" step=".5" value="${b.maxC}"></div>
   <div class="mut">Langhaar von<input id="bminL" type="number" step=".5" value="${b.minL}"></div><div class="mut">bis<input id="bmaxL" type="number" step=".5" value="${b.maxL}"></div></div>
   </details><label>Farbe der Decke</label><select id="bc">${o(COLORS,b.color||'mid')}</select>
-  <label>Einsatzort</label><select id="bp">${o(PLACE,b.place)}</select>
+  <label><input type="checkbox" id="bpo"${b.place!=='box'?' checked':''}>draußen einsetzbar</label>
+  <label><input type="checkbox" id="bpb"${b.place!=='outdoor'?' checked':''}>in der Box einsetzbar</label>
   <label><input type="checkbox" id="bwp"${b.waterproof?' checked':''}>wasserdicht</label>
   <label><input type="checkbox" id="bwi"${b.wind?' checked':''}>winddicht</label>
   <label><input type="checkbox" id="bne"${b.neck?' checked':''}>Halsteil</label>
   <label><input type="checkbox" id="bun"${lf(b).under?' checked':''}>als Unterdecke nutzbar</label>
   <label><input type="checkbox" id="bov"${lf(b).over?' checked':''}>als Oberdecke nutzbar</label>
+  <p class="mut">Für zwei Schichten: Beide Decken müssen etwas beitragen: eine Decke ohne Füllung (0 g) wird nur kombiniert, wenn sie etwas ergänzt, zum Beispiel wasserdicht über einer nicht wasserdichten Decke.</p>
   <div class="row"><button onclick="saveB()">Speichern</button><button class="s" onclick="E=null;drawB()">Abbrechen</button>${b.isNew?'':'<button class="d" onclick="delB()">Löschen</button>'}</div></div>`;return}
  el.innerHTML=`<div class="card"><h2>Meine Decken</h2><div class="it"><div onclick="editN()" style="flex:1"><b>Keine Decke</b><div class="mut">${noneTxt()}</div></div><button class="s" onclick="editN()">Ändern</button></div>${S.blankets.map(b=>`<div class="it"><div onclick="editB(${b.id})" style="flex:1"><b>${esc(b.name)}</b><div class="mut">${b.grams} g · ${COLORS[b.color||'mid'].toLowerCase()} · ${PLACE[b.place]}${lf(b).under&&lf(b).over?' · unten/oben':lf(b).under?' · Unterdecke':' · Oberdecke'}${b.waterproof?' · wasserdicht':''}<br>${rangeTxt(b)}</div></div>
   <select onchange="setSt(${b.id},this.value)"><option value="ok"${b.status==='ok'?' selected':''}>verfügbar</option><option value="wash"${b.status==='wash'?' selected':''}>in der Wäsche</option><option value="wet"${b.status==='wet'?' selected':''}>nass</option></select></div>`).join('')||'<p class="mut">Noch keine Decken. Lege deine erste an.</p>'}
@@ -209,7 +214,8 @@ function rangeTxt(b){const c=S.horse.coat;
 function editB(id){E=id?{...S.blankets.find(b=>b.id===id)}:{id:Date.now(),isNew:1,name:'',type:'rain',grams:0,...def(0),place:'outdoor',color:'mid',waterproof:true,wind:false,neck:false,status:'ok'};drawB()}
 function gch(){const d=def(+$('#bg').value||0);['minC','maxC','minL','maxL'].forEach(k=>$('#b'+k).value=d[k])}
 function saveB(){const n=$('#bn').value.trim();if(!n)return alert('Bitte einen Namen eingeben.');
- const b={id:E.id,name:n,type:$('#bt').value,grams:+$('#bg').value||0,minC:+$('#bminC').value,maxC:+$('#bmaxC').value,minL:+$('#bminL').value,maxL:+$('#bmaxL').value,place:$('#bp').value,color:$('#bc').value,waterproof:$('#bwp').checked,wind:$('#bwi').checked,neck:$('#bne').checked,under:$('#bun').checked,over:$('#bov').checked,status:E.status};
+ const po=$('#bpo').checked,pb=$('#bpb').checked;if(!po&&!pb)return alert('Bitte wählen: draußen und/oder in der Box einsetzbar.');
+ const b={id:E.id,name:n,type:$('#bt').value,grams:+$('#bg').value||0,minC:+$('#bminC').value,maxC:+$('#bmaxC').value,minL:+$('#bminL').value,maxL:+$('#bmaxL').value,place:po&&pb?'both':po?'outdoor':'box',color:$('#bc').value,waterproof:$('#bwp').checked,wind:$('#bwi').checked,neck:$('#bne').checked,under:$('#bun').checked,over:$('#bov').checked,status:E.status};
  const i=S.blankets.findIndex(x=>x.id===b.id);i<0?S.blankets.push(b):S.blankets[i]=b;E=null;save();drawB()}
 function delB(){if(confirm('Decke löschen?')){S.blankets=S.blankets.filter(b=>b.id!==E.id);E=null;save();drawB()}}
 function setSt(id,v){S.blankets.find(b=>b.id===id).status=v;save()}
