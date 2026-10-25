@@ -73,10 +73,12 @@ function recommend(w){
  const rg=b=>{const L=[b.minL,b.maxL],C=[b.minC,b.maxC];return h.coat==='long'?L:h.coat==='full'?C:[(L[0]+C[0])/2,(L[1]+C[1])/2]};
  const none={id:0,none:1,name:'Keine Decke',minC:14,maxC:40,minL:-2,maxL:40,waterproof:1,wind:1,place:'both'};
  const ok=b=>b.status==='ok'&&(box?b.place!=='outdoor':b.place!=='box');
- const c=[none,...S.blankets.filter(ok)].map(b=>{const[lo,hi]=rg(b);
+ const baseLo=rg(none)[0];
+ const c=[none,...S.blankets.filter(ok)].map(b=>{const[lo0,hi]=rg(b);
+  const lo=b.none?lo0:Math.min(lo0,baseLo); // eine Decke ist nie kälter als keine Decke
   const cold=Math.max(0,lo-eMin),hot=Math.max(0,eMax-hi);let pen=0;
   if(wet&&!box&&!b.waterproof)pen+=6;if(windy&&!box&&!b.wind)pen+=1.5;
-  return{b,lo,hi,cold,hot,pen,score:cold*1.5+hot+pen+Math.abs((lo+hi)/2-(eMin+eMax)/2)*.05}}).sort((a,b)=>a.score-b.score);
+  return{b,lo,hi,cold,hot,pen,score:cold*1.5+hot+pen+(b.none?0:.1+Math.abs((lo+hi)/2-(eMin+eMax)/2)*.05)}}).sort((a,b)=>a.score-b.score);
  return{best:c[0],alt:c[1],eMin,eMax,wet,windy,adj}}
 
 function drawToday(){
