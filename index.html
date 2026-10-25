@@ -71,7 +71,7 @@ function recommend(w){
  const adj=(h.cold==='cold'?-3:h.cold==='robust'?3:0)+(h.house==='open'&&!h.shelter?-2:0)+(box?2:0);
  const eMin=w.minA+adj,eMax=w.maxT+adj,wet=w.rain>=1||w.prob>=60,windy=w.wind>=30;
  const rg=b=>{const L=[b.minL,b.maxL],C=[b.minC,b.maxC];return h.coat==='long'?L:h.coat==='full'?C:[(L[0]+C[0])/2,(L[1]+C[1])/2]};
- const none={id:0,none:1,name:'Keine Decke',minC:14,maxC:40,minL:-2,maxL:40,waterproof:1,wind:1,place:'both'};
+ const none={id:0,none:1,name:'Keine Decke',minC:14,maxC:40,minL:4,maxL:40,waterproof:1,wind:1,place:'both'};
  const ok=b=>b.status==='ok'&&(box?b.place!=='outdoor':b.place!=='box');
  const baseLo=rg(none)[0];
  const c=[none,...S.blankets.filter(ok)].map(b=>{const[lo0,hi]=rg(b);
@@ -107,7 +107,7 @@ function drawToday(){
  else if(x.pen>=6)h+='<li class="warn">Keine wasserdichte Decke passt: Dir fehlt eine passende Regendecke.</li>';
  if(x.hot>4)h+='<li class="warn">Eher zu warm: Dir fehlt eine leichtere Decke.</li>';
  h+='</ul></details>';
- if(R.alt)h+=`<div class="mut">Alternative: ${esc(R.alt.b.name)}${R.alt.cold>0?' (kann zu kalt sein)':R.alt.hot>0?' (kann zu warm sein)':''}</div>`;
+ if(R.alt)h+=`<div class="mut">Alternative: ${esc(R.alt.b.name)}${R.alt.cold>R.best.cold+.25?' (kann zu kalt sein)':R.alt.hot>R.best.hot+.25?' (kann zu warm sein)':''}</div>`;
  el.innerHTML=h+'</div>'}
 
 function chart(s){
