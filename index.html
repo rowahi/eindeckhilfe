@@ -12,7 +12,7 @@ main{max-width:560px;margin:0 auto;padding:12px}
 .ampel{border-left:10px solid var(--g)}details{margin-top:8px}summary{cursor:pointer;color:var(--mut);padding:8px 0}
 button,input,select{min-height:46px}input[type=checkbox]{min-height:0;width:20px;height:20px;vertical-align:middle}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:10px}
-.dt1{margin:6px 0 2px}.dt1 span{display:block;font-size:.85rem;color:var(--mut)}.dt1 input{width:100%;min-width:0;font-size:.9rem;padding:8px 6px}
+.dt1{margin:6px 0 2px;display:flex;align-items:center;gap:6px}.dt1 span{font-size:.85rem;color:var(--mut);white-space:nowrap}.dt1 input{width:auto;flex:0 1 11.5em;min-width:0;font-size:.85rem;padding:6px 4px}
 .dt{display:grid;grid-template-columns:2.2rem minmax(0,1fr) 6.2rem;gap:6px;align-items:center;margin-top:6px}.dt select,.dt input{min-height:42px;padding:6px 8px;font-size:.9rem;min-width:0}.dt span{font-size:.85rem;color:var(--mut)}.tile.wide{grid-column:1/-1}
 h2{margin:0 0 8px;font-size:1.05rem}label{display:block;font-size:.85rem;color:var(--mut);margin:10px 0 3px}
 input,select,textarea,button{font:inherit;color:var(--tx)}
@@ -216,8 +216,9 @@ function drawToday(){
  if(q.hot>4&&!big)h+='<li class="warn">Eher zu warm: Dir fehlt eine leichtere Decke.</li>';
  h+='</ul>'}
  h+='</div>';
- h=H0+(SHOW?h:'');
+ const DET=SHOW?h:'';h=H0;
  if(W)h+=`<div class="card"><h2>Wetter${S.loc?' · '+esc(S.loc.name):''}</h2>${bigChart(from,to)}</div>`;
+ h+=DET;
  el.innerHTML=h}
 
 // Verlauf über alle gezeigten Halbtage, gewählter Zeitraum hervorgehoben
