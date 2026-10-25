@@ -22,6 +22,9 @@ button.s{background:var(--ac2);color:var(--tx)}button.d{background:var(--warn);c
 .big{font-size:1.6rem;font-weight:700;margin:2px 0}.mut{color:var(--mut);font-size:.9rem}
 .tag{display:inline-block;background:var(--ac2);border-radius:20px;padding:2px 10px;font-size:.8rem;margin:2px 4px 2px 0}
 .warn{color:var(--warn)}ul{padding-left:18px;margin:6px 0}
+.tile{border:1px solid var(--bd);border-radius:12px;padding:8px 10px;background:var(--bg);cursor:pointer;min-width:0}.tile.on{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac) inset}
+.tile b{font-size:.9rem}.tile .ic{font-size:1.3rem;margin-right:6px}.tile .tb{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:.85rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.tile .tb i{flex:0 0 10px;height:10px;border-radius:50%}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chips button{flex:0 1 auto;min-height:38px;padding:6px 10px;font-size:.85rem}
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom)}
 nav button{flex:1;background:none;color:var(--mut);border-radius:0;padding:14px 4px}nav button.on{color:var(--ac);font-weight:700}
 .it{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--bd)}
@@ -38,12 +41,13 @@ const def=g=>{const c=14-g*.055;return{minC:r1(c),maxC:r1(c+8),minL:r1(c-10),max
 const loc16=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,16);
 const nextVisit=()=>{const d=new Date();d.setDate(d.getDate()+1);d.setHours(17,30,0,0);return loc16(d)};
 const COLORS={dark:'Dunkel',mid:'Mittel',light:'Hell'},SUNF={dark:1,mid:.7,light:.4};
-const TYPES={rain:'Regendecke',outdoor:'Outdoor-Winterdecke',fleece:'Fleece',sweat:'Abschwitzdecke',stable:'Stalldecke'};
+const TYPES={rain:'Regendecke',outdoor:'Outdoor-Winterdecke',fleece:'Fleece',sweat:'Abschwitzdecke',stable:'Stalldecke',liner:'Liner (für bestimmte Decken)'};
 const PLACE={outdoor:'nur draußen',box:'nur Box',both:'draußen & Box'};
 let S;try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
-S=Object.assign({sunK:1,none:{minC:14,minL:4},vt:'17:30',photo:null,horse:{name:'',coat:'long',cold:'normal',house:'open',shelter:false},blankets:[],visit:'',loc:null,manual:{minA:0,maxT:8,wind:10,rain:0}},S||{});
+S=Object.assign({from:'',sunK:1,none:{minC:14,minL:4},vt:'17:30',photo:null,horse:{name:'',coat:'long',cold:'normal',house:'open',shelter:false},blankets:[],visit:'',loc:null,manual:{minA:0,maxT:8,wind:10,rain:0}},S||{});
 S.horse=Object.assign({outT:'07:00',inT:'17:00',boxAdj:1,color:'mid'},S.horse);if(S.horse.house==='paddock')S.horse.house='open';
 if(!S.visit||new Date(S.visit)<new Date())S.visit=nextVisit();
+if(S.from&&new Date(S.from)<Date.now()-72e5)S.from='';
 const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
 let W=null,err='',E=null,G=[];
 
@@ -62,17 +66,20 @@ const tmin=t=>{const[a,b]=String(t||'0:0').split(':');return(+a||0)*60+(+b||0)};
 function kindAt(d){const h=S.horse;if(h.house==='box')return'box';if(h.house!=='mixed')return'out';
  const o=tmin(h.outT),n=tmin(h.inT),t=d.getHours()*60+d.getMinutes()+30;
  return o<n?(t>=o&&t<n?'out':'box'):(t>=o||t<n?'out':'box')}
-function nextAt(hhmm){const d=new Date(),[a,b]=hhmm.split(':');d.setHours(+a,+b,0,0);if(d<=Date.now()+6e4)d.setDate(d.getDate()+1);return d}
+const fromBase=()=>S.from?new Date(S.from):new Date();
+function nextAt(hhmm,base){const b=base?new Date(base):new Date(),d=new Date(b),[x,y]=hhmm.split(':');d.setHours(+x,+y,0,0);if(d<=b.getTime()+6e4)d.setDate(d.getDate()+1);return d}
 function dayWord(d){const t=new Date();t.setHours(0,0,0,0);const n=Math.round((new Date(d).setHours(0,0,0,0)-t)/864e5);return n<=0?'heute':n===1?'morgen':d.toLocaleDateString('de-DE',{weekday:'long'})}
-function goAt(hhmm){S.visit=loc16(nextAt(hhmm));save();drawToday()}
-function analyse(){
- const v=new Date(S.visit),now=new Date();
- if(!(v>now))return{err:'Der Stallbesuch liegt in der Vergangenheit.'};
+function goAt(hhmm){S.visit=loc16(nextAt(hhmm,fromBase()));save();drawToday()}
+function setFrom(v){S.from=v||'';save();drawToday()}
+function analyse(a0,b0){
+ const v=b0||new Date(S.visit),now=new Date(),f=a0||fromBase();
+ if(!(v>now))return{err:'Das Ende des Zeitraums liegt in der Vergangenheit.'};
+ if(!(v>f))return{err:'„Von“ liegt nach „Bis“. Bitte den Zeitraum anpassen.'};
  if(!W){const m=S.manual,k=S.horse.house==='box'?['box']:S.horse.house==='mixed'?['out','box']:['out'];
   const base={minA:+m.minA,maxT:+m.maxT,wind:+m.wind,rain:+m.rain,prob:m.rain>0?100:0};
   return{...base,sunMax:0,segs:k.map(x=>({kind:x,...base,n:1,hrs:[{A:base.minA,T:base.maxT,r:0}]})),manual:1}}
- let ix=[];W.time.forEach((t,k)=>{const d=new Date(t);if(d>now-36e5&&d<v)ix.push(k)});
- if(!ix.length)W.time.forEach((t,k)=>{const d=new Date(t);if(d>now-36e5&&d<=v)ix.push(k)});
+ let ix=[];W.time.forEach((t,k)=>{const d=new Date(t);if(d>f-36e5&&d<v)ix.push(k)});
+ if(!ix.length)W.time.forEach((t,k)=>{const d=new Date(t);if(d>f-36e5&&d<=v)ix.push(k)});
  if(!ix.length)return{err:'Für diesen Zeitraum gibt es keine Wetterdaten (maximal 3 Tage).'};
  const st=(id,kind)=>{const g=a=>id.map(k=>W[a][k]);
   return{kind,n:id.length,minA:Math.min(...g('apparent_temperature')),maxT:Math.max(...g('temperature_2m')),wind:Math.max(...g('wind_speed_10m')),
@@ -90,12 +97,15 @@ function recommend(w){
  const rg=b=>{const L=[b.minL,b.maxL],C=[b.minC,b.maxC];return h.coat==='long'?L:h.coat==='full'?C:[(L[0]+C[0])/2,(L[1]+C[1])/2]};
  const none={id:0,none:1,name:'Keine Decke',minC:+S.none.minC,maxC:40,minL:+S.none.minL,maxL:40,waterproof:1,wind:1,place:'both',parts:[],layers:0};
  const baseLo=rg(none)[0],nC=+S.none.minC,nL=+S.none.minL;
- const act=S.blankets.filter(b=>b.status==='ok');
- // Kandidaten: keine Decke, einzelne Decken, Zweierkombinationen (Unterdecke + Oberdecke)
+ const act=S.blankets.filter(b=>b.status==='ok'),liners=act.filter(b=>b.type==='liner'),decks=act.filter(b=>b.type!=='liner');
+ // Teile: Decke allein oder Decke mit passendem Liner (zählt als eine Schicht)
+ const withLiner=(b,l)=>{const gL=Math.max(0,nL-Math.min(l.minL,nL)),gC=Math.max(0,nC-Math.min(l.minC,nC));
+  return{...b,name:b.name+' mit '+l.name,grams:(+b.grams||0)+(+l.grams||0),minL:Math.min(b.minL,nL)-gL,maxL:b.maxL-gL,minC:Math.min(b.minC,nC)-gC,maxC:b.maxC-gC,parts:[b.id,l.id],layers:1,base:b,liner:l}};
+ const pieces=[];decks.forEach(b=>{pieces.push({...b,parts:[b.id],layers:1,base:b});liners.filter(l=>(l.fits||[]).includes(b.id)).forEach(l=>pieces.push(withLiner(b,l)))});
  const adds=(x,y)=>+x.grams>0||x.minL<nL||x.minC<nC||(x.waterproof&&!y.waterproof)||(x.wind&&!y.wind); // trägt die Decke neben der anderen etwas bei?
- const cand=[none,...act.map(b=>({...b,parts:[b.id],layers:1}))];
- act.forEach(u=>act.forEach(o=>{
-  if(u.id===o.id||!lf(u).under||!lf(o).over)return;
+ const cand=[none,...pieces];
+ pieces.forEach(u=>pieces.forEach(o=>{
+  if(u.base.id===o.base.id||!lf(u.base).under||!lf(o.base).over)return;
   // beide Decken müssen etwas beitragen (Wärme, Wasser- oder Winddichtigkeit), sonst keine Kombination
   if(!adds(o,u)||!adds(u,o))return;
   if((u.place==='box'&&o.place==='outdoor')||(u.place==='outdoor'&&o.place==='box'))return;
@@ -103,7 +113,7 @@ function recommend(w){
   cand.push({id:'c'+u.id+'-'+o.id,name:u.name+' + '+o.name,type:'combo',grams:(+u.grams||0)+(+o.grams||0),
    minL:Math.min(o.minL,nL)-gL,maxL:o.maxL-gL,minC:Math.min(o.minC,nC)-gC,maxC:o.maxC-gC,
    place:(u.place==='box'||o.place==='box')?'box':(u.place==='outdoor'||o.place==='outdoor')?'outdoor':'both',
-   color:o.color,waterproof:o.waterproof,wind:o.wind,parts:[u.id,o.id],layers:2,under:u,over:o})}));
+   color:o.color,waterproof:o.waterproof,wind:o.wind,parts:[...u.parts,...o.parts],layers:2,under:u,over:o})}));
  const evaluate=ss=>{const single=ss.length===1;
   const eMin=Math.min(...ss.map(s=>s.eMin)),eMax=Math.max(...ss.map(s=>s.eMax));
   const ok=b=>b.none||!single||(ss[0].box?b.place!=='outdoor':b.place!=='box');
@@ -128,11 +138,27 @@ function recommend(w){
   let bt=1e9;for(const a of ev[0])for(const b of ev[1]){const t=a.score+b.score+.7*chg(a.b,b.b);if(t<bt){bt=t;plan={a,b,seg:[segs[0],segs[1]],chg:chg(a.b,b.b)}}}}
  return{best:c[0],alt:c[1],segs,plan,mixed:segs.length>1,eMin,eMax,wet:segs.some(s=>s.wet),windy:segs.some(s=>s.windy)}}
 
+const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
+const amp=q=>{const bad=q.cold>2.5||q.pen>=6,mid=q.cold>0||q.hot>2||q.pen>0;return{bad,mid,col:bad?'#c4472f':mid?'#d9a521':'#3a9d5d'}};
+let SL=[];
+function slots(){const o=tmin(S.horse.outT),n=tmin(S.horse.inT),B=[];
+ for(let k=-1;k<=3;k++)[[o,1],[n,0]].forEach(([t,day])=>{const d=new Date();d.setDate(d.getDate()+k);d.setHours(Math.floor(t/60),t%60,0,0);B.push({d,day})});
+ B.sort((x,y)=>x.d-y.d);const now=new Date();let i=0;B.forEach((x,k)=>{if(x.d<=now)i=k});
+ const out=[];if(B[i+1]&&B[i+1].d-now>=45*6e4)out.push({a:now,b:B[i+1].d,day:B[i].day,first:1});
+ for(let k=i+1;k<B.length-1&&out.length<4;k++)out.push({a:B[k].d,b:B[k+1].d,day:B[k].day});return out}
+function halbtage(){if(!W)return'';SL=slots();
+ return`<div class="card"><h2>Halbtage</h2><div class="g2">${SL.map((t,i)=>{
+  const w=analyse(t.a,t.b),sel=S.visit===loc16(t.b)&&((t.first&&!S.from)||S.from===loc16(t.a)),lab=t.first?'Jetzt':cap(dayWord(t.a))+(t.day?' tagsüber':' nachts');
+  if(w.err)return`<div class="tile${sel?' on':''}" onclick="setWin(${i})"><span class="ic">${t.day?'☀️':'🌙'}</span><b>${lab}</b><div class="mut">keine Wetterdaten</div></div>`;
+  const R=recommend(w),a=amp(R.best);
+  return`<div class="tile${sel?' on':''}" onclick="setWin(${i})"><div><span class="ic">${t.day?'☀️':'🌙'}</span><b>${lab}</b></div><div class="mut">${r0(w.minA)}° bis ${r0(w.maxT)}°${w.rain>=1?' · 🌧':''}</div><div class="tb"><i style="background:${a.col}"></i>${esc(R.best.b.name)}</div></div>`}).join('')}</div></div>`}
+function setWin(i){const t=SL[i];if(!t)return;S.from=t.first?'':loc16(t.a);S.visit=loc16(t.b);save();drawToday()}
 function drawToday(){
  const el=$('#v-today'),w=analyse(),m=S.manual;
- let h=hero()+`<div class="card"><h2>Nächster Stallbesuch</h2>${rem()}<input type="datetime-local" value="${S.visit}" onchange="setVisit(this.value)">
- <div class="row"><button class="s" onclick="tmr()">morgen ${S.vt}</button><button class="s" onclick="inH(24)">in 24 h</button></div>
- ${S.horse.house==='mixed'?`<div class="row"><button class="s" onclick="goAt('${S.horse.inT}')">bis Reinholen ${S.horse.inT} (${dayWord(nextAt(S.horse.inT))})</button><button class="s" onclick="goAt('${S.horse.outT}')">bis Rausbringen ${S.horse.outT} (${dayWord(nextAt(S.horse.outT))})</button></div>`:''}</div>`;
+ let h=hero()+`<div class="card"><h2>Zeitraum</h2>
+ <div class="g2"><div><label>Von</label><input type="datetime-local" style="font-size:.85rem;padding:9px 4px" value="${S.from||loc16(new Date())}" onchange="setFrom(this.value)"></div>
+ <div><label>Bis</label><input type="datetime-local" style="font-size:.85rem;padding:9px 4px" value="${S.visit}" onchange="setVisit(this.value)"></div></div>
+ ${rem()}<div class="chips">${S.from?'<button class="s" onclick="setFrom(\'\')">Von = jetzt</button>':''}<button class="s" onclick="tmr()">morgen ${S.vt}</button><button class="s" onclick="inH(24)">+24 h</button>${S.horse.house==='mixed'?`<button class="s" onclick="goAt('${S.horse.inT}')">bis ${S.horse.inT} Reinholen</button><button class="s" onclick="goAt('${S.horse.outT}')">bis ${S.horse.outT} Rausbringen</button>`:''}</div></div>${halbtage()}`;
  if(err||!W)h+=`<div class="card"><p class="warn">${esc(err)}</p><h2>Wetter manuell</h2><div class="g2">
  <div><label>Tiefste gefühlte °C</label><input type="number" value="${m.minA}" onchange="S.manual.minA=this.value;save();drawToday()"></div>
  <div><label>Höchste °C</label><input type="number" value="${m.maxT}" onchange="S.manual.maxT=this.value;save();drawToday()"></div>
@@ -146,12 +172,13 @@ function drawToday(){
  const q=R.best,bad=q.cold>2.5||q.pen>=6,mid=q.cold>0||q.hot>2||q.pen>0,col=bad?'#c4472f':mid?'#d9a521':'#3a9d5d',lab=bad?'Es fehlt eine passende Decke':mid?'Kompromiss':'Passt';
  h+=`<div class="card ampel" style="--g:${col}"><h2>${lab}</h2><div class="big">${esc(b.name)}</div>`;
  if(!b.none)h+=`<div class="mut">${b.layers===2?'Zwei Schichten':esc(TYPES[b.type]||'')} · ${b.grams||0} g · geeignet ${r0(R.best.lo)} bis ${r0(R.best.hi)} °C für dein Pferd</div>`;
- h+=`<details${mid?' open':''}><summary>Warum?</summary><ul><li>Für dein Pferd (${S.horse.coat==='long'?'langhaarig':S.horse.coat==='full'?'Vollschur':'Teilschur'}) fühlt sich die Zeit bis zum Besuch so an:</li>`;
+ h+=`<details><summary>Warum?</summary><ul><li>Für dein Pferd (${S.horse.coat==='long'?'langhaarig':S.horse.coat==='full'?'Vollschur':'Teilschur'}) fühlt sich die Zeit bis zum Besuch so an:</li>`;
  R.segs.forEach(g=>{h+=`<li>${g.box?'In der Box':'Draußen'}: ${r0(g.eMin)} bis ${r0(g.eMax)} °C${g.wet?' · Regen':''}${g.windy?' · starker Wind':''}</li>`});
  if(R.best.sunUp>=1)h+=`<li>Sonne draußen: ${b.none?'Fell ('+COLORS[S.horse.color||'mid'].toLowerCase()+')':'Decke ('+COLORS[b.color||'mid'].toLowerCase()+')'} wird bis ca. ${r0(R.best.sunUp)} °C wärmer, die Spanne geht dann bis ${r0(R.eMax+R.best.sunUp)} °C.</li>`;
  if(R.wet)h+='<li>Regen draußen erwartet: wasserdichte Decke nötig.</li>';
  if(R.windy)h+='<li>Starker Wind draußen: Decke sollte winddicht sein, evtl. Halsteil.</li>';
  if(R.mixed&&!b.none&&b.place==='outdoor')h+='<li class="warn">Diese Decke ist nur für draußen vorgesehen und bleibt auch in der Box drauf.</li>';
+ {const L=[R.best.b.liner,R.best.b.under&&R.best.b.under.liner,R.best.b.over&&R.best.b.over.liner].filter(Boolean);if(L.length)h+=`<li>Liner einlegen: ${L.map(l=>esc(l.name)).join(', ')}.</li>`}
  if(R.best.b.layers===2)h+=`<li>Zwei Schichten: unten ${esc(R.best.b.under.name)}, darüber ${esc(R.best.b.over.name)}. Sie können verrutschen, die Unterdecke gut fixieren.</li>`;
  if(R.plan){const ou=R.plan.a,bx=R.plan.b,nm=x=>x.b.none?'Keine Decke':esc(x.b.name),bn=i=>esc((S.blankets.find(x=>x.id===i)||{}).name||'');
   if(nm(ou)!==nm(bx)){const rm=bx.b.parts.filter(i=>!ou.b.parts.includes(i)),ad=ou.b.parts.filter(i=>!bx.b.parts.includes(i));
@@ -172,7 +199,7 @@ function chart(s){
  return`<svg viewBox="0 0 320 80" style="width:100%;margin-top:8px"><polyline points="${p}" fill="none" stroke="var(--ac)" stroke-width="2.5"/><text x="2" y="76" font-size="10" fill="var(--mut)">${r0(lo)}°</text><text x="2" y="12" font-size="10" fill="var(--mut)">${r0(hi)}°</text></svg>`}
 
 function setVisit(v){if(v){S.visit=v;S.vt=v.slice(11,16);save();drawToday()}}
-function inH(n){S.visit=loc16(new Date(Date.now()+n*36e5));save();drawToday()}
+function inH(n){S.visit=loc16(new Date(fromBase().getTime()+n*36e5));save();drawToday()}
 
 function drawB(){
  const el=$('#v-blk');
@@ -183,11 +210,14 @@ function drawB(){
  if(E){const b=E,o=(a,v)=>Object.entries(a).map(([k,t])=>`<option value="${k}"${k===v?' selected':''}>${t}</option>`).join('');
   el.innerHTML=`<div class="card"><h2>${b.isNew?'Neue Decke':'Decke bearbeiten'}</h2>
   <label>Name</label><input id="bn" value="${esc(b.name)}">
-  <div class="g2"><div><label>Typ</label><select id="bt">${o(TYPES,b.type)}</select></div><div><label>Füllung (g)</label><input id="bg" type="number" value="${b.grams}" oninput="gch()"></div></div>
+  <div class="g2"><div><label>Typ</label><select id="bt" onchange="typeCh()">${o(TYPES,b.type)}</select></div><div><label>Füllung (g)</label><input id="bg" type="number" value="${b.grams}" oninput="gch()"></div></div>
   <details><summary>Temperaturbereich (automatisch, anpassbar)</summary>
   <div class="g2"><div class="mut">Geschoren von<input id="bminC" type="number" step=".5" value="${b.minC}"></div><div class="mut">bis<input id="bmaxC" type="number" step=".5" value="${b.maxC}"></div>
   <div class="mut">Langhaar von<input id="bminL" type="number" step=".5" value="${b.minL}"></div><div class="mut">bis<input id="bmaxL" type="number" step=".5" value="${b.maxL}"></div></div>
-  </details><label>Farbe der Decke</label><select id="bc">${o(COLORS,b.color||'mid')}</select>
+  </details>
+  <div id="lonly"${b.type==='liner'?'':' hidden'}><label>Passt zu diesen Decken</label>${S.blankets.filter(x=>x.type!=='liner'&&x.id!==b.id).map(x=>`<label><input type="checkbox" class="bk" value="${x.id}"${(b.fits||[]).includes(x.id)?' checked':''}>${esc(x.name)}</label>`).join('')||'<p class="mut">Lege zuerst Decken an.</p>'}
+  <p class="mut">Ein Liner wird in die Decke eingelegt oder eingeknöpft und zählt mit ihr als eine Schicht.</p></div>
+  <div id="bonly"${b.type==='liner'?' hidden':''}><label>Farbe der Decke</label><select id="bc">${o(COLORS,b.color||'mid')}</select>
   <label><input type="checkbox" id="bpo"${b.place!=='box'?' checked':''}>draußen einsetzbar</label>
   <label><input type="checkbox" id="bpb"${b.place!=='outdoor'?' checked':''}>in der Box einsetzbar</label>
   <label><input type="checkbox" id="bwp"${b.waterproof?' checked':''}>wasserdicht</label>
@@ -196,10 +226,15 @@ function drawB(){
   <label><input type="checkbox" id="bun"${lf(b).under?' checked':''}>als Unterdecke nutzbar</label>
   <label><input type="checkbox" id="bov"${lf(b).over?' checked':''}>als Oberdecke nutzbar</label>
   <p class="mut">Für zwei Schichten: Beide Decken müssen etwas beitragen: eine Decke ohne Füllung (0 g) wird nur kombiniert, wenn sie etwas ergänzt, zum Beispiel wasserdicht über einer nicht wasserdichten Decke.</p>
+  ${S.blankets.some(x=>x.type==='liner')?`<label>Passende Liner</label>${S.blankets.filter(x=>x.type==='liner').map(x=>`<label><input type="checkbox" class="lk" value="${x.id}"${(x.fits||[]).includes(b.id)?' checked':''}>${esc(x.name)} (${x.grams} g)</label>`).join('')}`:''}</div>
   <div class="row"><button onclick="saveB()">Speichern</button><button class="s" onclick="E=null;drawB()">Abbrechen</button>${b.isNew?'':'<button class="d" onclick="delB()">Löschen</button>'}</div></div>`;return}
- el.innerHTML=`<div class="card"><h2>Meine Decken</h2><div class="it"><div onclick="editN()" style="flex:1"><b>Keine Decke</b><div class="mut">${noneTxt()}</div></div><button class="s" onclick="editN()">Ändern</button></div>${S.blankets.map(b=>`<div class="it"><div onclick="editB(${b.id})" style="flex:1"><b>${esc(b.name)}</b><div class="mut">${b.grams} g · ${COLORS[b.color||'mid'].toLowerCase()} · ${PLACE[b.place]}${lf(b).under&&lf(b).over?' · unten/oben':lf(b).under?' · Unterdecke':' · Oberdecke'}${b.waterproof?' · wasserdicht':''}<br>${rangeTxt(b)}</div></div>
-  <select onchange="setSt(${b.id},this.value)"><option value="ok"${b.status==='ok'?' selected':''}>verfügbar</option><option value="wash"${b.status==='wash'?' selected':''}>in der Wäsche</option><option value="wet"${b.status==='wet'?' selected':''}>nass</option></select></div>`).join('')||'<p class="mut">Noch keine Decken. Lege deine erste an.</p>'}
+ el.innerHTML=`<div class="card"><h2>Meine Decken</h2><div class="it"><div onclick="editN()" style="flex:1"><b>Keine Decke</b><div class="mut">${noneTxt()}</div></div><button class="s" onclick="editN()">Ändern</button></div>${S.blankets.map(b=>{const nm=ids=>ids.map(i=>(S.blankets.find(x=>x.id===i)||{}).name).filter(Boolean).map(esc).join(', ');
+  const lin=S.blankets.filter(x=>x.type==='liner'&&(x.fits||[]).includes(b.id)).map(x=>x.id);
+  const info=b.type==='liner'?`Liner · ${b.grams} g<br>${linerTxt(b)}${(b.fits||[]).length?'<br>passt zu: '+nm(b.fits):''}`:`${b.grams} g · ${COLORS[b.color||'mid'].toLowerCase()} · ${PLACE[b.place]}${lf(b).under&&lf(b).over?' · unten/oben':lf(b).under?' · Unterdecke':' · Oberdecke'}${b.waterproof?' · wasserdicht':''}<br>${rangeTxt(b)}${lin.length?'<br>Liner: '+nm(lin):''}`;
+  return`<div class="it"><div onclick="editB(${b.id})" style="flex:1"><b>${esc(b.name)}</b><div class="mut">${info}</div></div>
+  <select onchange="setSt(${b.id},this.value)"><option value="ok"${b.status==='ok'?' selected':''}>verfügbar</option><option value="wash"${b.status==='wash'?' selected':''}>in der Wäsche</option><option value="wet"${b.status==='wet'?' selected':''}>nass</option></select></div>`}).join('')||'<p class="mut">Noch keine Decken. Lege deine erste an.</p>'}
   <div class="row"><button onclick="editB()">+ Decke hinzufügen</button></div></div>`}
+function linerTxt(b){const g=Math.max(0,S.none.minL-b.minL),h=Math.max(0,S.none.minC-b.minC),c=S.horse.coat,v=c==='long'?g:c==='full'?h:(g+h)/2;return`erweitert den Bereich um ca. ${r0(v)} °C`}
 function noneTxt(){const c=S.horse.coat,n=S.none,w=esc(S.horse.name||'dein Pferd');
  if(c==='long')return`für ${w} (langhaarig): ab ${n.minL} °C`;
  if(c==='full')return`für ${w} (Vollschur): ab ${n.minC} °C`;
@@ -212,12 +247,15 @@ function rangeTxt(b){const c=S.horse.coat;
  if(c==='full')return`für ${esc(S.horse.name||'dein Pferd')} (Vollschur): ${b.minC} bis ${b.maxC} °C`;
  return`für ${esc(S.horse.name||'dein Pferd')} (Teilschur): ${r1((b.minL+b.minC)/2)} bis ${r1((b.maxL+b.maxC)/2)} °C`}
 function editB(id){E=id?{...S.blankets.find(b=>b.id===id)}:{id:Date.now(),isNew:1,name:'',type:'rain',grams:0,...def(0),place:'outdoor',color:'mid',waterproof:true,wind:false,neck:false,status:'ok'};drawB()}
+function typeCh(){const l=$('#bt').value==='liner';$('#lonly').hidden=!l;$('#bonly').hidden=l}
 function gch(){const d=def(+$('#bg').value||0);['minC','maxC','minL','maxL'].forEach(k=>$('#b'+k).value=d[k])}
 function saveB(){const n=$('#bn').value.trim();if(!n)return alert('Bitte einen Namen eingeben.');
- const po=$('#bpo').checked,pb=$('#bpb').checked;if(!po&&!pb)return alert('Bitte wählen: draußen und/oder in der Box einsetzbar.');
- const b={id:E.id,name:n,type:$('#bt').value,grams:+$('#bg').value||0,minC:+$('#bminC').value,maxC:+$('#bmaxC').value,minL:+$('#bminL').value,maxL:+$('#bmaxL').value,place:po&&pb?'both':po?'outdoor':'box',color:$('#bc').value,waterproof:$('#bwp').checked,wind:$('#bwi').checked,neck:$('#bne').checked,under:$('#bun').checked,over:$('#bov').checked,status:E.status};
+ const isL=$('#bt').value==='liner',po=isL||$('#bpo').checked,pb=isL||$('#bpb').checked;if(!po&&!pb)return alert('Bitte wählen: draußen und/oder in der Box einsetzbar.');
+ const b={id:E.id,name:n,type:$('#bt').value,grams:+$('#bg').value||0,minC:+$('#bminC').value,maxC:+$('#bmaxC').value,minL:+$('#bminL').value,maxL:+$('#bmaxL').value,place:po&&pb?'both':po?'outdoor':'box',color:isL?'mid':$('#bc').value,waterproof:!isL&&$('#bwp').checked,wind:!isL&&$('#bwi').checked,neck:!isL&&$('#bne').checked,under:!isL&&$('#bun').checked,over:!isL&&$('#bov').checked,status:E.status};
+ if(isL)b.fits=[...document.querySelectorAll('.bk')].filter(x=>x.checked).map(x=>+x.value);
+ else{const on=[...document.querySelectorAll('.lk')].filter(x=>x.checked).map(x=>+x.value);S.blankets.forEach(l=>{if(l.type==='liner'){l.fits=(l.fits||[]).filter(i=>i!==b.id);if(on.includes(l.id))l.fits.push(b.id)}})}
  const i=S.blankets.findIndex(x=>x.id===b.id);i<0?S.blankets.push(b):S.blankets[i]=b;E=null;save();drawB()}
-function delB(){if(confirm('Decke löschen?')){S.blankets=S.blankets.filter(b=>b.id!==E.id);E=null;save();drawB()}}
+function delB(){if(confirm('Decke löschen?')){S.blankets=S.blankets.filter(b=>b.id!==E.id);S.blankets.forEach(l=>{if(l.fits)l.fits=l.fits.filter(i=>i!==E.id)});E=null;save();drawB()}}
 function setSt(id,v){S.blankets.find(b=>b.id===id).status=v;save()}
 
 function drawH(){const h=S.horse,o=(a,v)=>Object.entries(a).map(([k,t])=>`<option value="${k}"${k===v?' selected':''}>${t}</option>`).join('');
@@ -268,8 +306,8 @@ function imp(){let t=($('#bk').value||'').trim();if(!t)return bkmsg('Das Feld is
  catch(e){bkmsg('Der Text ist unvollständig oder verändert. Bitte den Code erneut erzeugen und komplett einfügen.')}}
 
 function hero(){const p=S.photo;return`<div class="hero" style="${p?`background-image:linear-gradient(transparent 40%,rgba(0,0,0,.55)),url('${p}');min-height:150px`:''}">${esc(S.horse.name||'Eindeckhilfe')}</div>`}
-function rem(){const m=new Date(S.visit)-Date.now();if(m<=0)return'';return`<p class="mut">Noch ${Math.floor(m/36e5)} h ${Math.round(m%36e5/6e4)} min bis zum Stallbesuch</p>`}
-function tmr(){const d=new Date(),[a,b]=S.vt.split(':');d.setDate(d.getDate()+1);d.setHours(+a,+b,0,0);S.visit=loc16(d);save();drawToday()}
+function rem(){const m=new Date(S.visit)-fromBase();if(m<=0)return'';return`<p class="mut">Zeitraum: ${Math.floor(m/36e5)} h ${Math.round(m%36e5/6e4)} min</p>`}
+function tmr(){const d=new Date(fromBase()),[a,b]=S.vt.split(':');d.setDate(d.getDate()+1);d.setHours(+a,+b,0,0);S.visit=loc16(d);save();drawToday()}
 function photo(f){if(!f)return;const im=new Image();im.onload=()=>{const c=document.createElement('canvas'),k=Math.min(1,700/im.width);c.width=im.width*k;c.height=im.height*k;c.getContext('2d').drawImage(im,0,0,c.width,c.height);S.photo=c.toDataURL('image/jpeg',.75);save();drawH();URL.revokeObjectURL(im.src)};im.src=URL.createObjectURL(f)}
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 load();
