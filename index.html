@@ -155,7 +155,9 @@ function drawM(){$('#v-more').innerHTML=`<div class="card"><h2>Standort</h2><p c
  <div class="row"><button onclick="gps()">GPS verwenden</button></div>
  <label>Oder Ort suchen</label><div class="row"><input id="q" placeholder="z. B. Hamburg"><button class="s" style="flex:0" onclick="srch()">Suchen</button></div><div id="res"></div></div>
  <div class="card"><h2>Sicherung</h2><p class="mut">Pferd und Decken als Text exportieren oder auf einem anderen Handy importieren.</p>
- <textarea id="bk" rows="4"></textarea><div class="row"><button class="s" onclick="$('#bk').value=JSON.stringify({horse:S.horse,blankets:S.blankets})">Exportieren</button><button class="s" onclick="imp()">Importieren</button></div></div>
+ <textarea id="bk" rows="4" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
+ <div class="row"><button class="s" onclick="expo()">Code erzeugen</button><button class="s" onclick="shareCode()">Teilen (z. B. Threema)</button></div>
+ <div class="row"><button class="s" onclick="copyCode()">Kopieren</button><button onclick="imp()">Importieren</button></div><p id="bkmsg" class="mut"></p></div>
  <p class="mut">Wetterdaten: Open-Meteo.com. Alle Daten bleiben auf deinem Gerät. Die Empfehlung ist eine Entscheidungshilfe, prüfe dein Pferd immer selbst (Nacken und Flanke fühlen).</p>`}
 function gps(){navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>{S.loc={lat:p.coords.latitude,lon:p.coords.longitude,name:'GPS-Standort'};save();drawM();load()},()=>alert('Standort nicht verfügbar. Bitte Ort suchen.')):alert('Kein GPS verfügbar.')}
 async function srch(){const q=$('#q').value.trim();if(!q)return;
@@ -163,7 +165,24 @@ async function srch(){const q=$('#q').value.trim();if(!q)return;
  $('#res').innerHTML=G.map((r,i)=>`<div class="it"><span>${esc(r.name)}, ${esc(r.admin1||'')} ${esc(r.country_code||'')}</span><button class="s" onclick="pick(${i})">Wählen</button></div>`).join('')||'<p class="mut">Nichts gefunden.</p>'}
  catch(e){$('#res').innerHTML='<p class="warn">Suche nicht möglich (Internet?).</p>'}}
 function pick(i){const r=G[i];S.loc={lat:r.latitude,lon:r.longitude,name:r.name};save();drawM();load()}
-function imp(){try{const j=JSON.parse($('#bk').value);if(j.horse)S.horse=j.horse;if(Array.isArray(j.blankets))S.blankets=j.blankets;save();alert('Importiert.')}catch(e){alert('Text ist ungültig.')}}
+const b64e=t=>btoa(unescape(encodeURIComponent(t))),b64d=t=>decodeURIComponent(escape(atob(t)));
+function code(){return'EH1:'+b64e(JSON.stringify({horse:S.horse,blankets:S.blankets}))}
+function bkmsg(t){const m=$('#bkmsg');if(m)m.textContent=t}
+function expo(){$('#bk').value=code();bkmsg('Code erzeugt ('+$('#bk').value.length+' Zeichen). Mit „Teilen“ oder „Kopieren“ weitergeben.')}
+async function shareCode(){const c=code();$('#bk').value=c;
+ try{if(navigator.share){await navigator.share({text:c});return}}catch(e){if(e&&e.name==='AbortError')return}
+ copyCode()}
+async function copyCode(){const t=$('#bk');if(!t.value)t.value=code();
+ try{await navigator.clipboard.writeText(t.value);bkmsg('Code kopiert. Jetzt in Threema einfügen.')}catch(e){t.select();bkmsg('Bitte den markierten Text selbst kopieren.')}}
+function imp(){let t=($('#bk').value||'').trim();if(!t)return bkmsg('Das Feld ist leer. Erst den Code einfügen.');
+ try{let j;
+  const k=t.indexOf('EH1:');
+  if(k>=0){j=JSON.parse(b64d(t.slice(k+4).replace(/[^A-Za-z0-9+\/=]/g,'')))}
+  else{t=t.replace(/[\u201C\u201D\u201E]/g,'"').replace(/[\u2018\u2019]/g,"'");j=JSON.parse(t.slice(t.indexOf('{'),t.lastIndexOf('}')+1))}
+  if(!j||(!j.horse&&!Array.isArray(j.blankets)))throw 0;
+  if(j.horse)S.horse=Object.assign(S.horse,j.horse);if(Array.isArray(j.blankets))S.blankets=j.blankets;
+  save();bkmsg('Importiert: '+S.blankets.length+' Decken'+(j.horse?' und Pferdeprofil':'')+'.')}
+ catch(e){bkmsg('Der Text ist unvollständig oder verändert. Bitte den Code erneut erzeugen und komplett einfügen.')}}
 
 function hero(){const p=S.photo;return`<div class="hero" style="${p?`background-image:linear-gradient(transparent 40%,rgba(0,0,0,.55)),url('${p}');min-height:150px`:''}">${esc(S.horse.name||'Eindeckhilfe')}</div>`}
 function rem(){const m=new Date(S.visit)-Date.now();if(m<=0)return'';return`<p class="mut">Noch ${Math.floor(m/36e5)} h ${Math.round(m%36e5/6e4)} min bis zum Stallbesuch</p>`}
