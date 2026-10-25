@@ -37,11 +37,12 @@ const r1=x=>Math.round(x*2)/2,r0=x=>Math.round(x);
 const def=g=>{const c=14-g*.055;return{minC:r1(c),maxC:r1(c+8),minL:r1(c-10),maxL:r1(c-2)}};
 const loc16=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,16);
 const nextVisit=()=>{const d=new Date();d.setDate(d.getDate()+1);d.setHours(17,30,0,0);return loc16(d)};
+const COLORS={dark:'Dunkel',mid:'Mittel',light:'Hell'},SUNF={dark:1,mid:.7,light:.4};
 const TYPES={rain:'Regendecke',outdoor:'Outdoor-Winterdecke',fleece:'Fleece',sweat:'Abschwitzdecke',stable:'Stalldecke'};
 const PLACE={outdoor:'nur draußen',box:'nur Box',both:'draußen & Box'};
 let S;try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
-S=Object.assign({none:{minC:14,minL:4},vt:'17:30',photo:null,horse:{name:'',coat:'long',cold:'normal',house:'open',shelter:false},blankets:[],visit:'',loc:null,manual:{minA:0,maxT:8,wind:10,rain:0}},S||{});
-S.horse=Object.assign({outT:'07:00',inT:'17:00',boxAdj:1},S.horse);if(S.horse.house==='paddock')S.horse.house='open';
+S=Object.assign({sunK:1,none:{minC:14,minL:4},vt:'17:30',photo:null,horse:{name:'',coat:'long',cold:'normal',house:'open',shelter:false},blankets:[],visit:'',loc:null,manual:{minA:0,maxT:8,wind:10,rain:0}},S||{});
+S.horse=Object.assign({outT:'07:00',inT:'17:00',boxAdj:1,color:'mid'},S.horse);if(S.horse.house==='paddock')S.horse.house='open';
 if(!S.visit||new Date(S.visit)<new Date())S.visit=nextVisit();
 const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
 let W=null,err='',E=null,G=[];
@@ -52,7 +53,7 @@ function tab(n){['today','blk','horse','more'].forEach(x=>{$('#v-'+x).hidden=x!=
 async function load(){
  if(!S.loc){W=null;err='Noch kein Standort gewählt (Reiter „Mehr“).';return drawToday()}
  err='';
- try{const u=`https://api.open-meteo.com/v1/forecast?latitude=${S.loc.lat}&longitude=${S.loc.lon}&hourly=temperature_2m,apparent_temperature,precipitation,precipitation_probability,wind_speed_10m&forecast_days=3&timezone=auto`;
+ try{const u=`https://api.open-meteo.com/v1/forecast?latitude=${S.loc.lat}&longitude=${S.loc.lon}&hourly=temperature_2m,apparent_temperature,precipitation,precipitation_probability,wind_speed_10m,shortwave_radiation&forecast_days=3&timezone=auto`;
   const j=await(await fetch(u)).json();if(!j.hourly)throw 0;W=j.hourly}
  catch(e){W=null;err='Wetter nicht abrufbar (Internet?). Du kannst die Werte manuell eingeben.'}
  drawToday()}
@@ -69,15 +70,17 @@ function analyse(){
  if(!(v>now))return{err:'Der Stallbesuch liegt in der Vergangenheit.'};
  if(!W){const m=S.manual,k=S.horse.house==='box'?['box']:S.horse.house==='mixed'?['out','box']:['out'];
   const base={minA:+m.minA,maxT:+m.maxT,wind:+m.wind,rain:+m.rain,prob:m.rain>0?100:0};
-  return{...base,segs:k.map(x=>({kind:x,...base,n:1})),manual:1}}
+  return{...base,sunMax:0,segs:k.map(x=>({kind:x,...base,n:1,hrs:[{A:base.minA,T:base.maxT,r:0}]})),manual:1}}
  let ix=[];W.time.forEach((t,k)=>{const d=new Date(t);if(d>now-36e5&&d<v)ix.push(k)});
  if(!ix.length)W.time.forEach((t,k)=>{const d=new Date(t);if(d>now-36e5&&d<=v)ix.push(k)});
  if(!ix.length)return{err:'Für diesen Zeitraum gibt es keine Wetterdaten (maximal 3 Tage).'};
  const st=(id,kind)=>{const g=a=>id.map(k=>W[a][k]);
   return{kind,n:id.length,minA:Math.min(...g('apparent_temperature')),maxT:Math.max(...g('temperature_2m')),wind:Math.max(...g('wind_speed_10m')),
-   rain:g('precipitation').reduce((a,b)=>a+b,0),prob:Math.max(...g('precipitation_probability').map(x=>x||0))}};
+   rain:g('precipitation').reduce((a,b)=>a+b,0),prob:Math.max(...g('precipitation_probability').map(x=>x||0)),
+   hrs:id.map(k=>({A:W.apparent_temperature[k],T:W.temperature_2m[k],r:kind==='box'?0:(W.shortwave_radiation?W.shortwave_radiation[k]||0:0)}))}};
  const segs=['out','box'].map(kd=>[kd,ix.filter(k=>kindAt(new Date(W.time[k]))===kd)]).filter(x=>x[1].length).map(x=>st(x[1],x[0]));
- const all=st(ix,'all');return{...all,segs,ser:ix.map(k=>W.apparent_temperature[k])}}
+ const all=st(ix,'all'),sunMax=Math.max(0,...segs.filter(g=>g.kind==='out').flatMap(g=>g.hrs.map(x=>x.r)));
+ return{...all,sunMax,segs,ser:ix.map(k=>W.apparent_temperature[k])}}
 
 function recommend(w){
  const h=S.horse,cadj=h.cold==='cold'?-3:h.cold==='robust'?3:0,badj=+(h.boxAdj??1);
@@ -91,11 +94,16 @@ function recommend(w){
  const eMin=Math.min(...segs.map(s=>s.eMin)),eMax=Math.max(...segs.map(s=>s.eMax));
  const c=[none,...S.blankets.filter(ok)].map(b=>{const[lo0,hi]=rg(b);
   const lo=b.none?lo0:Math.min(lo0,baseLo); // eine Decke ist nie kälter als keine Decke
-  let cold=0,hot=0,pen=0;
-  for(const s of segs){cold=Math.max(cold,lo-s.eMin);hot=Math.max(hot,s.eMax-hi);
+  let cold=0,hot=0,pen=0,top=-99;
+  const F=SUNF[(b.none?h.color:b.color)||'mid'],K=+S.sunK;
+  for(const s of segs){
+   // Sonne: Gefühlte Temperatur enthält schon einen Mittelwert, daher nur die Abweichung der Farbe; Lufttemperatur bekommt die volle Sonnenwirkung
+   const cMin=Math.min(...s.hrs.map(x=>x.A+s.adj+(F-.7)*x.r/100*K)),cMax=Math.max(...s.hrs.map(x=>x.T+s.adj+F*x.r/100*K));
+   top=Math.max(top,cMax);
+   cold=Math.max(cold,lo-cMin);hot=Math.max(hot,cMax-hi);
    if(s.wet&&!b.waterproof)pen+=6;if(s.windy&&!b.wind)pen+=1.5;
    if(!single&&(s.box?b.place==='outdoor':b.place==='box'))pen+=2.5}
-  return{b,lo,hi,cold,hot,pen,score:cold*1.5+hot+pen+(b.none?0:.1+Math.abs((lo+hi)/2-(eMin+eMax)/2)*.05)}}).sort((a,b)=>a.score-b.score);
+  return{b,lo,hi,cold,hot,pen,sunUp:top-eMax,score:cold*1.5+hot+pen+(b.none?0:.1+Math.abs((lo+hi)/2-(eMin+eMax)/2)*.05)}}).sort((a,b)=>a.score-b.score);
  return{best:c[0],alt:c[1],segs,mixed:!single,eMin,eMax,wet:segs.some(s=>s.wet),windy:segs.some(s=>s.windy)}}
 
 function drawToday(){
@@ -111,13 +119,14 @@ function drawToday(){
  ${S.loc?'<div class="row"><button class="s" onclick="load()">Erneut versuchen</button></div>':''}</div>`;
  if(w.err){el.innerHTML=h+`<div class="card warn">${esc(w.err)}</div>`;return}
  h+=`<div class="card"><h2>Wetter bis zum Besuch${S.loc?' · '+esc(S.loc.name):''}</h2>
- <span class="tag">gefühlt min ${r0(w.minA)} °C</span><span class="tag">max ${r0(w.maxT)} °C</span><span class="tag">Wind ${r0(w.wind)} km/h</span><span class="tag">Regen ${w.rain.toFixed(1)} mm (${r0(w.prob)} %)</span>${chart(w.ser)}</div>`;
+ <span class="tag">gefühlt min ${r0(w.minA)} °C</span><span class="tag">max ${r0(w.maxT)} °C</span><span class="tag">Wind ${r0(w.wind)} km/h</span><span class="tag">Regen ${w.rain.toFixed(1)} mm (${r0(w.prob)} %)</span>${w.sunMax>0?`<span class="tag">Sonne ${w.sunMax>=300?'stark':w.sunMax>=120?'mäßig':'schwach'}</span>`:''}${chart(w.ser)}</div>`;
  const R=recommend(w),b=R.best.b;
  const q=R.best,bad=q.cold>2.5||q.pen>=6,mid=q.cold>0||q.hot>2||q.pen>0,col=bad?'#c4472f':mid?'#d9a521':'#3a9d5d',lab=bad?'Es fehlt eine passende Decke':mid?'Kompromiss':'Passt';
  h+=`<div class="card ampel" style="--g:${col}"><h2>${lab}</h2><div class="big">${esc(b.name)}</div>`;
  if(!b.none)h+=`<div class="mut">${esc(TYPES[b.type]||'')} · ${b.grams||0} g · geeignet ${r0(R.best.lo)} bis ${r0(R.best.hi)} °C für dein Pferd</div>`;
  h+=`<details${mid?' open':''}><summary>Warum?</summary><ul><li>Für dein Pferd (${S.horse.coat==='long'?'langhaarig':S.horse.coat==='full'?'Vollschur':'Teilschur'}) fühlt sich die Zeit bis zum Besuch so an:</li>`;
  R.segs.forEach(g=>{h+=`<li>${g.box?'In der Box':'Draußen'}: ${r0(g.eMin)} bis ${r0(g.eMax)} °C${g.wet?' · Regen':''}${g.windy?' · starker Wind':''}</li>`});
+ if(R.best.sunUp>=1)h+=`<li>Sonne draußen: ${b.none?'Fell ('+COLORS[S.horse.color||'mid'].toLowerCase()+')':'Decke ('+COLORS[b.color||'mid'].toLowerCase()+')'} wird bis ca. ${r0(R.best.sunUp)} °C wärmer, die Spanne geht dann bis ${r0(R.eMax+R.best.sunUp)} °C.</li>`;
  if(R.wet)h+='<li>Regen draußen erwartet: wasserdichte Decke nötig.</li>';
  if(R.windy)h+='<li>Starker Wind draußen: Decke sollte winddicht sein, evtl. Halsteil.</li>';
  if(R.mixed&&!b.none&&b.place==='outdoor')h+='<li class="warn">Diese Decke ist nur für draußen vorgesehen und bleibt auch in der Box drauf.</li>';
@@ -154,12 +163,13 @@ function drawB(){
   <details><summary>Temperaturbereich (automatisch, anpassbar)</summary>
   <div class="g2"><div class="mut">Geschoren von<input id="bminC" type="number" step=".5" value="${b.minC}"></div><div class="mut">bis<input id="bmaxC" type="number" step=".5" value="${b.maxC}"></div>
   <div class="mut">Langhaar von<input id="bminL" type="number" step=".5" value="${b.minL}"></div><div class="mut">bis<input id="bmaxL" type="number" step=".5" value="${b.maxL}"></div></div>
-  </details><label>Einsatzort</label><select id="bp">${o(PLACE,b.place)}</select>
+  </details><label>Farbe der Decke</label><select id="bc">${o(COLORS,b.color||'mid')}</select>
+  <label>Einsatzort</label><select id="bp">${o(PLACE,b.place)}</select>
   <label><input type="checkbox" id="bwp"${b.waterproof?' checked':''}>wasserdicht</label>
   <label><input type="checkbox" id="bwi"${b.wind?' checked':''}>winddicht</label>
   <label><input type="checkbox" id="bne"${b.neck?' checked':''}>Halsteil</label>
   <div class="row"><button onclick="saveB()">Speichern</button><button class="s" onclick="E=null;drawB()">Abbrechen</button>${b.isNew?'':'<button class="d" onclick="delB()">Löschen</button>'}</div></div>`;return}
- el.innerHTML=`<div class="card"><h2>Meine Decken</h2><div class="it"><div onclick="editN()" style="flex:1"><b>Keine Decke</b><div class="mut">${noneTxt()}</div></div><button class="s" onclick="editN()">Ändern</button></div>${S.blankets.map(b=>`<div class="it"><div onclick="editB(${b.id})" style="flex:1"><b>${esc(b.name)}</b><div class="mut">${b.grams} g · ${PLACE[b.place]}${b.waterproof?' · wasserdicht':''}<br>${rangeTxt(b)}</div></div>
+ el.innerHTML=`<div class="card"><h2>Meine Decken</h2><div class="it"><div onclick="editN()" style="flex:1"><b>Keine Decke</b><div class="mut">${noneTxt()}</div></div><button class="s" onclick="editN()">Ändern</button></div>${S.blankets.map(b=>`<div class="it"><div onclick="editB(${b.id})" style="flex:1"><b>${esc(b.name)}</b><div class="mut">${b.grams} g · ${COLORS[b.color||'mid'].toLowerCase()} · ${PLACE[b.place]}${b.waterproof?' · wasserdicht':''}<br>${rangeTxt(b)}</div></div>
   <select onchange="setSt(${b.id},this.value)"><option value="ok"${b.status==='ok'?' selected':''}>verfügbar</option><option value="wash"${b.status==='wash'?' selected':''}>in der Wäsche</option><option value="wet"${b.status==='wet'?' selected':''}>nass</option></select></div>`).join('')||'<p class="mut">Noch keine Decken. Lege deine erste an.</p>'}
   <div class="row"><button onclick="editB()">+ Decke hinzufügen</button></div></div>`}
 function noneTxt(){const c=S.horse.coat,n=S.none,w=esc(S.horse.name||'dein Pferd');
@@ -173,10 +183,10 @@ function rangeTxt(b){const c=S.horse.coat;
  if(c==='long')return`für ${esc(S.horse.name||'dein Pferd')} (langhaarig): ${b.minL} bis ${b.maxL} °C`;
  if(c==='full')return`für ${esc(S.horse.name||'dein Pferd')} (Vollschur): ${b.minC} bis ${b.maxC} °C`;
  return`für ${esc(S.horse.name||'dein Pferd')} (Teilschur): ${r1((b.minL+b.minC)/2)} bis ${r1((b.maxL+b.maxC)/2)} °C`}
-function editB(id){E=id?{...S.blankets.find(b=>b.id===id)}:{id:Date.now(),isNew:1,name:'',type:'rain',grams:0,...def(0),place:'outdoor',waterproof:true,wind:false,neck:false,status:'ok'};drawB()}
+function editB(id){E=id?{...S.blankets.find(b=>b.id===id)}:{id:Date.now(),isNew:1,name:'',type:'rain',grams:0,...def(0),place:'outdoor',color:'mid',waterproof:true,wind:false,neck:false,status:'ok'};drawB()}
 function gch(){const d=def(+$('#bg').value||0);['minC','maxC','minL','maxL'].forEach(k=>$('#b'+k).value=d[k])}
 function saveB(){const n=$('#bn').value.trim();if(!n)return alert('Bitte einen Namen eingeben.');
- const b={id:E.id,name:n,type:$('#bt').value,grams:+$('#bg').value||0,minC:+$('#bminC').value,maxC:+$('#bmaxC').value,minL:+$('#bminL').value,maxL:+$('#bmaxL').value,place:$('#bp').value,waterproof:$('#bwp').checked,wind:$('#bwi').checked,neck:$('#bne').checked,status:E.status};
+ const b={id:E.id,name:n,type:$('#bt').value,grams:+$('#bg').value||0,minC:+$('#bminC').value,maxC:+$('#bmaxC').value,minL:+$('#bminL').value,maxL:+$('#bmaxL').value,place:$('#bp').value,color:$('#bc').value,waterproof:$('#bwp').checked,wind:$('#bwi').checked,neck:$('#bne').checked,status:E.status};
  const i=S.blankets.findIndex(x=>x.id===b.id);i<0?S.blankets.push(b):S.blankets[i]=b;E=null;save();drawB()}
 function delB(){if(confirm('Decke löschen?')){S.blankets=S.blankets.filter(b=>b.id!==E.id);E=null;save();drawB()}}
 function setSt(id,v){S.blankets.find(b=>b.id===id).status=v;save()}
@@ -185,6 +195,7 @@ function drawH(){const h=S.horse,o=(a,v)=>Object.entries(a).map(([k,t])=>`<optio
  $('#v-horse').innerHTML=`<div class="card"><h2>Mein Pferd</h2>
  <label>Name</label><input value="${esc(h.name)}" onchange="S.horse.name=this.value;save()">
  <label>Foto (für den Kopf der Startseite)</label><input type="file" accept="image/*" onchange="photo(this.files[0])">${S.photo?'<div class="row"><button class="s" onclick="S.photo=null;save();drawH()">Foto entfernen</button></div>':''}<label>Haarkleid</label><select onchange="S.horse.coat=this.value;save()">${o({long:'Langhaarig (nicht geschoren)',partial:'Teilschur (Deckenschur, Jagdschur, Brustschur)',full:'Vollschur'},h.coat)}</select>
+ <label>Fellfarbe (Sonne wärmt dunkle Tiere stärker)</label><select onchange="S.horse.color=this.value;save()">${o(COLORS,h.color)}</select>
  <label>Frostigkeit</label><select onchange="S.horse.cold=this.value;save()">${o({robust:'Robust',normal:'Normal',cold:'Eher verfroren (alt, dünn, Vollblut)'},h.cold)}</select>
  <label>Haltung</label><select onchange="S.horse.house=this.value;save();drawH()">${o({open:'Draußen (Weide, Paddock, Offenstall)',box:'Box',mixed:'Tagsüber draußen, nachts Box'},h.house)}</select>
  ${h.house==='mixed'?`<div class="g2"><div><label>Rausbringen um</label><input type="time" value="${h.outT}" onchange="S.horse.outT=this.value||'07:00';save()"></div><div><label>Reinholen um</label><input type="time" value="${h.inT}" onchange="S.horse.inT=this.value||'17:00';save()"></div></div>`:''}
@@ -199,6 +210,8 @@ function drawM(){$('#v-more').innerHTML=`<div class="card"><h2>Standort</h2><p c
  <textarea id="bk" rows="4" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
  <div class="row"><button class="s" onclick="expo()">Code erzeugen</button><button class="s" onclick="shareCode()">Teilen (z. B. Threema)</button></div>
  <div class="row"><button class="s" onclick="copyCode()">Kopieren</button><button onclick="imp()">Importieren</button></div><p id="bkmsg" class="mut"></p></div>
+ <div class="card"><h2>Sonneneinfluss</h2><p class="mut">Wie stark die Sonne Pferd und Decke aufwärmt. Bei Pferd und Decke legst du die Farbe fest.</p>
+ <select onchange="S.sunK=+this.value;save();drawM()">${[[0,'aus'],[.5,'schwach'],[1,'normal'],[1.5,'stark']].map(x=>`<option value="${x[0]}"${+S.sunK===x[0]?' selected':''}>${x[1]}</option>`).join('')}</select></div>
  <p class="mut">Wetterdaten: Open-Meteo.com. Alle Daten bleiben auf deinem Gerät. Die Empfehlung ist eine Entscheidungshilfe, prüfe dein Pferd immer selbst (Nacken und Flanke fühlen).</p>`}
 function gps(){navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>{S.loc={lat:p.coords.latitude,lon:p.coords.longitude,name:'GPS-Standort'};save();drawM();load()},()=>alert('Standort nicht verfügbar. Bitte Ort suchen.')):alert('Kein GPS verfügbar.')}
 async function srch(){const q=$('#q').value.trim();if(!q)return;
