@@ -40,7 +40,7 @@ const nextVisit=()=>{const d=new Date();d.setDate(d.getDate()+1);d.setHours(17,3
 const TYPES={rain:'Regendecke',outdoor:'Outdoor-Winterdecke',fleece:'Fleece',sweat:'Abschwitzdecke',stable:'Stalldecke'};
 const PLACE={outdoor:'nur draußen',box:'nur Box',both:'draußen & Box'};
 let S;try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
-S=Object.assign({vt:'17:30',photo:null,horse:{name:'',coat:'long',cold:'normal',house:'open',shelter:false},blankets:[],visit:'',loc:null,manual:{minA:0,maxT:8,wind:10,rain:0}},S||{});
+S=Object.assign({none:{minC:14,minL:4},vt:'17:30',photo:null,horse:{name:'',coat:'long',cold:'normal',house:'open',shelter:false},blankets:[],visit:'',loc:null,manual:{minA:0,maxT:8,wind:10,rain:0}},S||{});
 if(!S.visit||new Date(S.visit)<new Date())S.visit=nextVisit();
 const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
 let W=null,err='',E=null,G=[];
@@ -71,7 +71,7 @@ function recommend(w){
  const adj=(h.cold==='cold'?-3:h.cold==='robust'?3:0)+(h.house==='open'&&!h.shelter?-2:0)+(box?2:0);
  const eMin=w.minA+adj,eMax=w.maxT+adj,wet=w.rain>=1||w.prob>=60,windy=w.wind>=30;
  const rg=b=>{const L=[b.minL,b.maxL],C=[b.minC,b.maxC];return h.coat==='long'?L:h.coat==='full'?C:[(L[0]+C[0])/2,(L[1]+C[1])/2]};
- const none={id:0,none:1,name:'Keine Decke',minC:14,maxC:40,minL:4,maxL:40,waterproof:1,wind:1,place:'both'};
+ const none={id:0,none:1,name:'Keine Decke',minC:+S.none.minC,maxC:40,minL:+S.none.minL,maxL:40,waterproof:1,wind:1,place:'both'};
  const ok=b=>b.status==='ok'&&(box?b.place!=='outdoor':b.place!=='box');
  const baseLo=rg(none)[0];
  const c=[none,...S.blankets.filter(ok)].map(b=>{const[lo0,hi]=rg(b);
@@ -121,6 +121,10 @@ function inH(n){S.visit=loc16(new Date(Date.now()+n*36e5));save();drawToday()}
 
 function drawB(){
  const el=$('#v-blk');
+ if(E&&E.none){el.innerHTML=`<div class="card"><h2>Keine Decke</h2>
+  <p class="mut">Ab welcher gefühlten Temperatur kommt dein Pferd ohne Decke aus? Darunter empfiehlt die App eine Decke. Der Wert gilt nach den Abzügen für Frostigkeit und Haltung aus dem Pferdeprofil.</p>
+  <div class="g2"><div><label>Geschoren: ab °C</label><input id="nC" type="number" step=".5" value="${E.minC}"></div><div><label>Langhaarig: ab °C</label><input id="nL" type="number" step=".5" value="${E.minL}"></div></div>
+  <div class="row"><button onclick="saveN()">Speichern</button><button class="s" onclick="E=null;drawB()">Abbrechen</button><button class="s" onclick="resetN()">Standard</button></div></div>`;return}
  if(E){const b=E,o=(a,v)=>Object.entries(a).map(([k,t])=>`<option value="${k}"${k===v?' selected':''}>${t}</option>`).join('');
   el.innerHTML=`<div class="card"><h2>${b.isNew?'Neue Decke':'Decke bearbeiten'}</h2>
   <label>Name</label><input id="bn" value="${esc(b.name)}">
@@ -133,9 +137,16 @@ function drawB(){
   <label><input type="checkbox" id="bwi"${b.wind?' checked':''}>winddicht</label>
   <label><input type="checkbox" id="bne"${b.neck?' checked':''}>Halsteil</label>
   <div class="row"><button onclick="saveB()">Speichern</button><button class="s" onclick="E=null;drawB()">Abbrechen</button>${b.isNew?'':'<button class="d" onclick="delB()">Löschen</button>'}</div></div>`;return}
- el.innerHTML=`<div class="card"><h2>Meine Decken</h2>${S.blankets.map(b=>`<div class="it"><div onclick="editB(${b.id})" style="flex:1"><b>${esc(b.name)}</b><div class="mut">${b.grams} g · ${PLACE[b.place]}${b.waterproof?' · wasserdicht':''}<br>${rangeTxt(b)}</div></div>
+ el.innerHTML=`<div class="card"><h2>Meine Decken</h2><div class="it"><div onclick="editN()" style="flex:1"><b>Keine Decke</b><div class="mut">${noneTxt()}</div></div><button class="s" onclick="editN()">Ändern</button></div>${S.blankets.map(b=>`<div class="it"><div onclick="editB(${b.id})" style="flex:1"><b>${esc(b.name)}</b><div class="mut">${b.grams} g · ${PLACE[b.place]}${b.waterproof?' · wasserdicht':''}<br>${rangeTxt(b)}</div></div>
   <select onchange="setSt(${b.id},this.value)"><option value="ok"${b.status==='ok'?' selected':''}>verfügbar</option><option value="wash"${b.status==='wash'?' selected':''}>in der Wäsche</option><option value="wet"${b.status==='wet'?' selected':''}>nass</option></select></div>`).join('')||'<p class="mut">Noch keine Decken. Lege deine erste an.</p>'}
   <div class="row"><button onclick="editB()">+ Decke hinzufügen</button></div></div>`}
+function noneTxt(){const c=S.horse.coat,n=S.none,w=esc(S.horse.name||'dein Pferd');
+ if(c==='long')return`für ${w} (langhaarig): ab ${n.minL} °C`;
+ if(c==='full')return`für ${w} (Vollschur): ab ${n.minC} °C`;
+ return`für ${w} (Teilschur): ab ${r1((+n.minL+ +n.minC)/2)} °C`}
+function editN(){E={none:1,minC:S.none.minC,minL:S.none.minL};drawB()}
+function saveN(){const c=parseFloat($('#nC').value),l=parseFloat($('#nL').value);if(isNaN(c)||isNaN(l))return alert('Bitte beide Werte als Zahl eingeben.');S.none={minC:c,minL:l};E=null;save();drawB()}
+function resetN(){S.none={minC:14,minL:4};E=null;save();drawB()}
 function rangeTxt(b){const c=S.horse.coat;
  if(c==='long')return`für ${esc(S.horse.name||'dein Pferd')} (langhaarig): ${b.minL} bis ${b.maxL} °C`;
  if(c==='full')return`für ${esc(S.horse.name||'dein Pferd')} (Vollschur): ${b.minC} bis ${b.maxC} °C`;
@@ -172,7 +183,7 @@ async function srch(){const q=$('#q').value.trim();if(!q)return;
  catch(e){$('#res').innerHTML='<p class="warn">Suche nicht möglich (Internet?).</p>'}}
 function pick(i){const r=G[i];S.loc={lat:r.latitude,lon:r.longitude,name:r.name};save();drawM();load()}
 const b64e=t=>btoa(unescape(encodeURIComponent(t))),b64d=t=>decodeURIComponent(escape(atob(t)));
-function code(){return'EH1:'+b64e(JSON.stringify({horse:S.horse,blankets:S.blankets}))}
+function code(){return'EH1:'+b64e(JSON.stringify({horse:S.horse,blankets:S.blankets,none:S.none}))}
 function bkmsg(t){const m=$('#bkmsg');if(m)m.textContent=t}
 function expo(){$('#bk').value=code();bkmsg('Code erzeugt ('+$('#bk').value.length+' Zeichen). Mit „Teilen“ oder „Kopieren“ weitergeben.')}
 async function shareCode(){const c=code();$('#bk').value=c;
@@ -186,7 +197,7 @@ function imp(){let t=($('#bk').value||'').trim();if(!t)return bkmsg('Das Feld is
   if(k>=0){j=JSON.parse(b64d(t.slice(k+4).replace(/[^A-Za-z0-9+\/=]/g,'')))}
   else{t=t.replace(/[\u201C\u201D\u201E]/g,'"').replace(/[\u2018\u2019]/g,"'");j=JSON.parse(t.slice(t.indexOf('{'),t.lastIndexOf('}')+1))}
   if(!j||(!j.horse&&!Array.isArray(j.blankets)))throw 0;
-  if(j.horse)S.horse=Object.assign(S.horse,j.horse);if(Array.isArray(j.blankets))S.blankets=j.blankets;
+  if(j.horse)S.horse=Object.assign(S.horse,j.horse);if(Array.isArray(j.blankets))S.blankets=j.blankets;if(j.none&&!isNaN(j.none.minC)&&!isNaN(j.none.minL))S.none={minC:+j.none.minC,minL:+j.none.minL};
   save();bkmsg('Importiert: '+S.blankets.length+' Decken'+(j.horse?' und Pferdeprofil':'')+'.')}
  catch(e){bkmsg('Der Text ist unvollständig oder verändert. Bitte den Code erneut erzeugen und komplett einfügen.')}}
 
