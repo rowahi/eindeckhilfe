@@ -151,7 +151,7 @@ function slots(){const o=tmin(S.horse.outT),n=tmin(S.horse.inT),B=[];
  for(let k=i+1;k<B.length-1&&out.length<4;k++)out.push({a:B[k].d,b:B[k+1].d,day:B[k].day});return out}
 const wd=d=>new Date(d).toLocaleDateString('de-DE',{weekday:'long'});
 const slotLab=t=>(t.first||dayWord(t.a)==='heute'?'Heute':wd(t.a))+(t.day?' am Tag':' in der Nacht');
-const slotFor=t=>t.first&&!t.day?'diese Nacht':slotLab(t);
+const slotFor=t=>t.first&&!t.day?'diese Nacht':slotLab(t).replace(/^Heute/,'heute');
 // Wetterart eines Zeitabschnitts für das Symbol
 function wkind(a,b){if(!W)return'clear';let n=0,rain=0,tm=0,cl=0;
  W.time.forEach((t,k)=>{const d=new Date(t);if(d>a-36e5&&d<b){n++;rain+=W.precipitation[k]||0;tm+=W.temperature_2m[k];cl+=(W.cloud_cover?W.cloud_cover[k]:0)||0}});
@@ -170,7 +170,7 @@ function wico(day,k,z){z=z||30;if(k!=='rain'&&k!=='snow')return'';
 function tileHTML(i,t,w,sel,lab,sub,wide,extra,pre){
  const day=t?t.day:isDayAt(new Date((w.a.getTime()+w.b.getTime())/2)),ic=wico(day,wkind(w.a,w.b));
  const R=w.res.err?null:recommend(w.res);
- return`<div class="tile${wide?' wide':''}${sel?' on':''}" onclick="setWin(${i})"><div class="tl">${ic}<b>${lab}</b></div>${extra||''}${sub?`<div class="mut">${sub}</div>`:''}<div class="tb">${pre||''}${R?esc(R.best.b.name):'keine Wetterdaten'}</div></div>`}
+ return`<div class="tile${wide?' wide':''}${sel?' on':''}" onclick="setWin(${i})">${t?'':`<div class="tl">${ic}<b>${lab}</b></div>`}${extra||''}${sub?`<div class="mut">${sub}</div>`:''}<div class="tb">${t?ic:''}${pre||''}${R?esc(R.best.b.name):'keine Wetterdaten'}</div></div>`}
 function setWin(i){const was=(ACT===i&&SHOW);ACT=i;WHY=false;SHOW=!was;drawToday()}
 function toggleWhy(){WHY=!WHY;drawToday()}
 const fdt=d=>new Date(d).toLocaleString('de-DE',{weekday:'long',hour:'2-digit',minute:'2-digit'});
@@ -238,10 +238,11 @@ function bigChart(from,to){if(!W||!SL.length)return'';
  const rain=ix.map(k=>{const r=W.precipitation[k]||0;if(r<=0)return'';const x=X(new Date(W.time[k]).getTime()),hh=Math.min(12,2+r*5);return`<rect x="${(x-1.2).toFixed(1)}" y="${(66-hh).toFixed(1)}" width="2.4" height="${hh.toFixed(1)}" fill="#4a90d9" opacity=".75"/>`}).join('');
  const fx=X(from.getTime()),tx=X(to.getTime());
  const sel=`<rect x="${fx.toFixed(1)}" y="2" width="${Math.max(2,tx-fx).toFixed(1)}" height="64" fill="var(--ac)" opacity=".16" stroke="var(--ac)" stroke-width="1.5" rx="3"/>`;
+ const vt=new Date(S.visit).getTime(),vx=X(vt),mk=(vt>=t0&&vt<=t1)?`<line x1="${vx.toFixed(1)}" x2="${vx.toFixed(1)}" y1="4" y2="68" stroke="#d9483b" stroke-width="2" stroke-dasharray="4 2"/><polygon points="${(vx-5).toFixed(1)},0 ${(vx+5).toFixed(1)},0 ${vx.toFixed(1)},7" fill="#d9483b"/><text x="${vx>240?(vx-4).toFixed(1):(vx+4).toFixed(1)}" y="20" font-size="9" font-weight="700" text-anchor="${vx>240?'end':'start'}" fill="#d9483b">Stallbesuch</text>`:'';
  return`<svg viewBox="0 0 320 86" style="width:100%">${night}${sep}${sel}${rain}<polyline points="${pts}" fill="none" stroke="var(--ac)" stroke-width="2.4" stroke-linejoin="round"/>
  <text x="2" y="12" font-size="9" fill="var(--mut)">${r0(hi)}°</text><text x="2" y="64" font-size="9" fill="var(--mut)">${r0(lo)}°</text>
- ${dayLbl(t0,t1,X)}</svg>
- <p class="mut" style="margin:2px 0 0">Gefühlte Temperatur · blau: Regen · Rahmen: gewählter Zeitraum</p>`}
+ ${mk}${dayLbl(t0,t1,X)}</svg>
+ <p class="mut" style="margin:2px 0 0">Gefühlte Temperatur · blau: Regen · Rahmen: gewählter Zeitraum · rot: Stallbesuch</p>`}
 
 function setVisit(v){if(v){S.visit=v;S.vt=v.slice(11,16);ACT=-1;SHOW=true;WHY=false;save();drawToday()}}
 function inH(n){S.visit=loc16(new Date(fromBase().getTime()+n*36e5));save();drawToday()}
