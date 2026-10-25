@@ -142,7 +142,7 @@ function recommend(w){
 
 const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
 const amp=(q,span)=>{const bad=!(span>=8)&&(q.pen>=6||q.cold>2.5),mid=q.cold>0||q.hot>2||q.pen>0;return{bad,mid,col:bad?'#c4472f':mid?'#d9a521':'#3a9d5d'}};
-let SL=[],WHY=false,ACT=-1; // ACT: -1 = eigener Zeitraum (Von/Bis), sonst Nummer des Halbtags
+let SL=[],WHY=false,SHOW=false,ACT=-1; // ACT: -1 = eigener Zeitraum (Von/Bis), sonst Nummer des Halbtags
 const isDayAt=d=>{const o=tmin(S.horse.outT),n=tmin(S.horse.inT),t=d.getHours()*60+d.getMinutes();return o<n?(t>=o&&t<n):(t>=o||t<n)};
 function slots(){const o=tmin(S.horse.outT),n=tmin(S.horse.inT),B=[];
  for(let k=-1;k<=3;k++)[[o,1],[n,0]].forEach(([t,day])=>{const d=new Date();d.setDate(d.getDate()+k);d.setHours(Math.floor(t/60),t%60,0,0);B.push({d,day})});
@@ -170,7 +170,7 @@ function tileHTML(i,t,w,sel,lab,sub,wide,extra){
  const day=t?t.day:isDayAt(new Date((w.a.getTime()+w.b.getTime())/2)),ic=wico(day,wkind(w.a,w.b));
  const R=w.res.err?null:recommend(w.res);
  return`<div class="tile${wide?' wide':''}${sel?' on':''}" onclick="setWin(${i})"><div class="tl">${ic}<b>${lab}</b></div>${extra||''}${sub?`<div class="mut">${sub}</div>`:''}<div class="tb">${R?esc(R.best.b.name):'keine Wetterdaten'}</div></div>`}
-function setWin(i){const was=(ACT===i);ACT=i;WHY=was?!WHY:true;drawToday()}
+function setWin(i){const was=(ACT===i&&SHOW);ACT=i;WHY=false;SHOW=!was;drawToday()}
 function toggleWhy(){WHY=!WHY;drawToday()}
 const fdt=d=>new Date(d).toLocaleString('de-DE',{weekday:'long',hour:'2-digit',minute:'2-digit'});
 function drawToday(){
@@ -178,7 +178,7 @@ function drawToday(){
  const win=ACT>=0?SL[ACT]:null,el=$('#v-today'),w=win?analyse(win.a,win.b):analyse(),m=S.manual;
  const cf=fromBase(),ct=new Date(S.visit),cw={a:cf,b:ct,res:analyse()};
  const inp=`<div class="dt1" onclick="event.stopPropagation()"><span>von jetzt bis</span><input type="datetime-local" value="${S.visit}" onchange="setVisit(this.value)"></div>`;
- let h=hero()+`<div class="card"><div class="g2">${tileHTML(-1,null,cw,ACT===-1,'Nächster Stallbesuch','',1,inp)}${SL.map((t,i)=>tileHTML(i,t,{a:t.a,b:t.b,res:analyse(t.a,t.b)},ACT===i,slotLab(t),'',0)).join('')}</div></div>`;
+ let h=hero()+`<div class="card"><div class="g2">${tileHTML(-1,null,cw,SHOW&&ACT===-1,'Nächster Stallbesuch','',1,inp)}${SL.map((t,i)=>tileHTML(i,t,{a:t.a,b:t.b,res:analyse(t.a,t.b)},SHOW&&ACT===i,slotLab(t),'',0)).join('')}</div></div>`;
  if(err||!W)h+=`<div class="card"><p class="warn">${esc(err)}</p><h2>Wetter manuell</h2><div class="g2">
  <div><label>Tiefste gefühlte °C</label><input type="number" value="${m.minA}" onchange="S.manual.minA=this.value;save();drawToday()"></div>
  <div><label>Höchste °C</label><input type="number" value="${m.maxT}" onchange="S.manual.maxT=this.value;save();drawToday()"></div>
@@ -187,8 +187,9 @@ function drawToday(){
  ${S.loc?'<div class="row"><button class="s" onclick="load()">Erneut versuchen</button></div>':''}</div>`;
  if(w.err){el.innerHTML=h+`<div class="card warn">${esc(w.err)}</div>`;return}
  const R=recommend(w),b=R.best.b,q=R.best,span=Math.max(R.eMax-R.eMin,w.maxT-w.minA),A=amp(q,span),big=span>=8,lab=A.bad?'Es fehlt eine passende Decke':A.mid?(big?'Kompromiss (große Temperaturspanne)':'Kompromiss'):'Passt';
- const from=win?win.a:cf,to=win?win.b:ct,title=win?slotLab(win):'Jetzt bis '+fdt(to),
+ const from=win?win.a:cf,to=win?win.b:ct,title='Details zu '+(win?slotLab(win):'Nächster Stallbesuch (jetzt bis '+fdt(to)+')'),
   ic=W?wico(true,wkind(from,to)):'';
+  const H0=h;h='';
   h+=`<div class="card" style="cursor:pointer" onclick="toggleWhy()"><div class="tl" style="display:flex;align-items:center;gap:8px">${ic}<h2 style="margin:0">${title}</h2></div>
  <div class="mut" style="margin-top:6px">${lab}</div><div class="big">${esc(b.name)}</div>`;
  if(!b.none)h+=`<div class="mut">${b.layers===2?'Zwei Schichten':esc(TYPES[b.type]||'')} · ${b.grams||0} g · geeignet ${r0(q.lo)} bis ${r0(q.hi)} °C für dein Pferd</div>`;
@@ -215,6 +216,7 @@ function drawToday(){
  if(q.hot>4&&!big)h+='<li class="warn">Eher zu warm: Dir fehlt eine leichtere Decke.</li>';
  h+='</ul>'}
  h+='</div>';
+ h=H0+(SHOW?h:'');
  if(W)h+=`<div class="card"><h2>Wetter${S.loc?' · '+esc(S.loc.name):''}</h2>${bigChart(from,to)}</div>`;
  el.innerHTML=h}
 
@@ -239,7 +241,7 @@ function bigChart(from,to){if(!W||!SL.length)return'';
  ${dayLbl(t0,t1,X)}</svg>
  <p class="mut" style="margin:2px 0 0">Gefühlte Temperatur · blau: Regen · Rahmen: gewählter Zeitraum</p>`}
 
-function setVisit(v){if(v){S.visit=v;S.vt=v.slice(11,16);ACT=-1;save();drawToday()}}
+function setVisit(v){if(v){S.visit=v;S.vt=v.slice(11,16);ACT=-1;SHOW=true;WHY=false;save();drawToday()}}
 function inH(n){S.visit=loc16(new Date(fromBase().getTime()+n*36e5));save();drawToday()}
 
 function drawB(){
