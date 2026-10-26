@@ -97,7 +97,7 @@ function recommend(w){
  const segs=w.segs.map(g=>{const box=g.kind==='box',adj=cadj+(box?badj:(h.shelter?0:-2));
   return{...g,box,adj,eMin:g.minA+adj,eMax:g.maxT+adj,wet:!box&&(g.rain>=1||g.prob>=60),windy:!box&&g.wind>=30}});
  const rg=b=>{const L=[b.minL,b.maxL],C=[b.minC,b.maxC];return h.coat==='long'?L:h.coat==='full'?C:[(L[0]+C[0])/2,(L[1]+C[1])/2]};
- const none={id:0,none:1,name:'Keine Decke',minC:+S.none.minC,maxC:40,minL:+S.none.minL,maxL:40,waterproof:1,wind:1,place:'both',parts:[],layers:0};
+ const none={id:0,none:1,name:'Keine Decke',minC:+S.none.minC,maxC:40,minL:+S.none.minL,maxL:40,waterproof:0,wind:1,place:'both',parts:[],layers:0};
  const baseLo=rg(none)[0],nC=+S.none.minC,nL=+S.none.minL;
  const act=S.blankets.filter(b=>b.status==='ok'),liners=act.filter(b=>b.type==='liner'),decks=act.filter(b=>b.type!=='liner');
  // Teile: Decke allein oder Decke mit passendem Liner (zählt als eine Schicht)
@@ -127,8 +127,10 @@ function recommend(w){
     // Sonne: Gefühlte Temperatur enthält schon einen Mittelwert, daher nur die Abweichung der Farbe; Lufttemperatur bekommt die volle Sonnenwirkung
     const cMin=Math.min(...s.hrs.map(x=>x.A+s.adj+(F-.7)*x.r/100*K)),cMax=Math.max(...s.hrs.map(x=>x.T+s.adj+F*x.r/100*K));
     top=Math.max(top,cMax);
-    cold=Math.max(cold,lo-cMin);hot=Math.max(hot,cMax-hi);
-    if(s.wet&&!b.waterproof)pen+=6;if(s.windy&&!b.wind)pen+=1.5;
+    // Regen: eine dünne Regendecke (0 g) staut kaum Wärme und passt dann auch bei warmem Wetter
+    const hiS=s.wet&&!b.none&&b.waterproof&&(+b.grams||0)===0?hi+10:hi;
+    cold=Math.max(cold,lo-cMin);hot=Math.max(hot,cMax-hiS);
+    if(s.wet&&!b.waterproof)pen+=10;if(s.windy&&!b.wind)pen+=1.5;
     if(!single&&(s.box?b.place==='outdoor':b.place==='box'))pen+=2.5}
    const slip=b.layers===2?.4:0; // zwei Schichten können verrutschen
    return{b,lo,hi,cold,hot,pen,sunUp:top-eMax,score:cold*1.5+hot+pen+slip+(b.none?0:.1+Math.abs((lo+hi)/2-(eMin+eMax)/2)*.05)}}).sort((a,b)=>a.score-b.score)};
