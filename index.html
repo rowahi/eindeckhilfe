@@ -336,6 +336,10 @@ function drawM(){$('#v-more').innerHTML=`<div class="card"><h2>Standort</h2><p c
  <textarea id="bk" rows="4" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
  <div class="row"><button class="s" onclick="expo()">Code erzeugen</button><button class="s" onclick="shareCode()">Teilen (z. B. Threema)</button></div>
  <div class="row"><button class="s" onclick="copyCode()">Kopieren</button><button onclick="imp()">Importieren</button></div><p id="bkmsg" class="mut"></p></div>
+ <div class="card"><h2>Tabellen (CSV)</h2><p class="mut">Für Excel, Numbers oder Google Sheets. Decken und Pferd werden als zwei Dateien gespeichert. Beim Import wird die Deckenliste ersetzt.</p>
+ <div class="row"><button class="s" onclick="expB()">Decken exportieren</button><button class="s" onclick="expH()">Pferd &amp; Einstellungen exportieren</button></div>
+ <div class="row"><button class="s" onclick="shareCSV()">Beide teilen</button><button onclick="$('#csvf').click()">CSV importieren</button></div>
+ <input id="csvf" type="file" accept=".csv,text/csv,text/plain,text/comma-separated-values" multiple hidden onchange="impCSV(this)"><p id="csvmsg" class="mut"></p></div>
  <div class="card"><h2>Sonneneinfluss</h2><p class="mut">Wie stark die Sonne Pferd und Decke aufwärmt. Bei Pferd und Decke legst du die Farbe fest.</p>
  <select onchange="S.sunK=+this.value;save();drawM()">${[[0,'aus'],[.5,'schwach'],[1,'normal'],[1.5,'stark']].map(x=>`<option value="${x[0]}"${+S.sunK===x[0]?' selected':''}>${x[1]}</option>`).join('')}</select></div>
  <p class="mut">Wetterdaten: Open-Meteo.com. Alle Daten bleiben auf deinem Gerät. Die Empfehlung ist eine Entscheidungshilfe, prüfe dein Pferd immer selbst (Nacken und Flanke fühlen).</p>`}
@@ -363,6 +367,65 @@ function imp(){let t=($('#bk').value||'').trim();if(!t)return bkmsg('Das Feld is
   if(j.horse){S.horse=Object.assign(S.horse,j.horse);if(S.horse.house==='paddock')S.horse.house='open'}if(Array.isArray(j.blankets))S.blankets=j.blankets;if(j.none&&!isNaN(j.none.minC)&&!isNaN(j.none.minL))S.none={minC:+j.none.minC,minL:+j.none.minL};
   save();bkmsg('Importiert: '+S.blankets.length+' Decken'+(j.horse?' und Pferdeprofil':'')+'.')}
  catch(e){bkmsg('Der Text ist unvollständig oder verändert. Bitte den Code erneut erzeugen und komplett einfügen.')}}
+
+// ---- CSV-Export/-Import (Semikolon, UTF-8 mit BOM, deutsches Excel-freundlich) ----
+const JN=v=>v?'ja':'nein',isJ=v=>/^(ja|j|yes|y|x|1|true|wahr)$/i.test(String(v||'').trim());
+const num=v=>String(v??'').replace('.',','),pnum=v=>{const x=parseFloat(String(v||'').trim().replace(',','.'));return isNaN(x)?null:x};
+const csvq=v=>{v=v==null?'':String(v);return/[;"\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+const csvLine=a=>a.map(csvq).join(';');
+const STATUS={ok:'verfügbar',wash:'in der Wäsche',wet:'nass'};
+const COAT={long:'langhaarig',partial:'Teilschur',full:'Vollschur'},COLDL={robust:'robust',normal:'normal',cold:'verfroren'},HOUSE={open:'draußen',box:'Box',mixed:'tagsüber draußen, nachts Box'},SUNL={0:'aus',0.5:'schwach',1:'normal',1.5:'stark'};
+const rev=(m,v,d)=>{v=String(v||'').trim().toLowerCase();const k=Object.keys(m).find(k=>k.toLowerCase()===v||String(m[k]).toLowerCase()===v||String(m[k]).toLowerCase().startsWith(v)&&v.length>2);return k??d};
+const BH=['Name','Typ','Füllung g','Geschoren von °C','Geschoren bis °C','Langhaar von °C','Langhaar bis °C','draußen','Box','wasserdicht','winddicht','Halsteil','Unterdecke','Oberdecke','Helligkeit','Farbton','Status','Liner passt zu'];
+function blanketsCSV(){const nm=i=>(S.blankets.find(x=>x.id===i)||{}).name||'';
+ const rows=S.blankets.map(b=>{const L=b.type==='liner',f=lf(b);return[b.name,TYPES[b.type]||b.type,b.grams||0,num(b.minC),num(b.maxC),num(b.minL),num(b.maxL),JN(b.place!=='box'),JN(b.place!=='outdoor'),JN(b.waterproof),JN(b.wind),JN(b.neck),L?'':JN(f.under),L?'':JN(f.over),COLORS[b.color||'mid'],L?'':(b.hex||bcol(b)),STATUS[b.status||'ok'],L?(b.fits||[]).map(nm).filter(Boolean).join(', '):'']});
+ return[csvLine(BH),...rows.map(csvLine)].join('\r\n')}
+function horseCSV(){const h=S.horse,l=S.loc||{};const R=[['Feld','Wert'],['Name',h.name||''],['Haarkleid',COAT[h.coat]||h.coat],['Fellfarbe',COLORS[h.color||'mid']],['Frostigkeit',COLDL[h.cold]||h.cold],['Haltung',HOUSE[h.house]||h.house],['Rausbringen um',h.outT||''],['Reinholen um',h.inT||''],['Box wärmer um °C',num(h.boxAdj)],['Unterstand draußen',JN(h.shelter)],
+ ['Keine Decke geschoren ab °C',num(S.none.minC)],['Keine Decke langhaarig ab °C',num(S.none.minL)],['Sonneneinfluss',SUNL[+S.sunK]??num(S.sunK)],['Ort',l.name||''],['Breitengrad',l.lat!=null?num(l.lat):''],['Längengrad',l.lon!=null?num(l.lon):''],['Uhrzeit Stallbesuch',S.vt||'']];
+ return R.map(csvLine).join('\r\n')}
+function parseCSV(t){t=t.replace(/^﻿/,'');const first=t.split(/\r?\n/)[0]||'',sep=(first.split(';').length>=first.split(',').length)?';':(first.includes('\t')?'\t':',');
+ const rows=[];let row=[],f='',q=false;for(let i=0;i<t.length;i++){const c=t[i];
+  if(q){if(c==='"'){if(t[i+1]==='"'){f+='"';i++}else q=false}else f+=c}
+  else if(c==='"')q=true;else if(c===sep){row.push(f);f=''}else if(c==='\n'||c==='\r'){if(c==='\r'&&t[i+1]==='\n')i++;row.push(f);rows.push(row);row=[];f=''}else f+=c}
+ if(f!==''||row.length){row.push(f);rows.push(row)}return rows.filter(r=>r.some(x=>x.trim()!==''))}
+function importBlankets(rows){const H=rows[0].map(x=>x.trim().toLowerCase()),col=n=>H.findIndex(h=>h.startsWith(n.toLowerCase())),g=(r,n)=>{const i=col(n);return i<0?'':(r[i]||'').trim()};
+ const out=[],err=[],links=[];let id=Date.now();
+ rows.slice(1).forEach((r,k)=>{const name=g(r,'Name');if(!name)return;const z=k+2;
+  const type=rev(TYPES,g(r,'Typ'),'rain'),grams=pnum(g(r,'Füllung'))??0,d=def(grams),nb=(n,dv)=>{const v=g(r,n);if(v==='')return dv;const x=pnum(v);if(x===null){err.push(`Zeile ${z}: „${n}“ ist keine Zahl (${v})`);return dv}return x};
+  const o=g(r,'draußen'),bx=g(r,'Box'),po=o===''?true:isJ(o),pb=bx===''?true:isJ(bx);
+  const b={id:id++,name,type,grams,minC:nb('Geschoren von',d.minC),maxC:nb('Geschoren bis',d.maxC),minL:nb('Langhaar von',d.minL),maxL:nb('Langhaar bis',d.maxL),place:po&&pb||(!po&&!pb)?'both':po?'outdoor':'box',color:rev(COLORS,g(r,'Helligkeit'),'mid'),waterproof:isJ(g(r,'wasserdicht')),wind:isJ(g(r,'winddicht')),neck:isJ(g(r,'Halsteil')),status:rev(STATUS,g(r,'Status'),'ok')};
+  if(type!=='liner'){const u=g(r,'Unterdecke'),v=g(r,'Oberdecke');if(u!=='')b.under=isJ(u);if(v!=='')b.over=isJ(v);const hx=g(r,'Farbton');if(/^#[0-9a-f]{6}$/i.test(hx))b.hex=hx}
+  else{b.fits=[];links.push([b,g(r,'Liner passt zu')])}
+  out.push(b)});
+ links.forEach(([b,t])=>t.split(/[,|]/).map(x=>x.trim().toLowerCase()).filter(Boolean).forEach(n=>{const m=out.find(x=>x.type!=='liner'&&x.name.toLowerCase()===n);m?b.fits.push(m.id):err.push(`Liner „${b.name}“: Decke „${n}“ nicht gefunden`)}));
+ return{out,err}}
+function importHorse(rows){const m={};rows.slice(1).forEach(r=>{if(r[0])m[r[0].trim().toLowerCase()]=(r[1]||'').trim()});const g=n=>{const k=Object.keys(m).find(k=>k.startsWith(n.toLowerCase()));return k?m[k]:''};
+ const h=S.horse,err=[],nb=(n,cur)=>{const v=g(n);if(v==='')return cur;const x=pnum(v);if(x===null){err.push(`„${n}“ ist keine Zahl (${v})`);return cur}return x};
+ if(g('Name'))h.name=g('Name');h.coat=rev(COAT,g('Haarkleid'),h.coat);h.color=rev(COLORS,g('Fellfarbe'),h.color);h.cold=rev(COLDL,g('Frostigkeit'),h.cold);h.house=rev(HOUSE,g('Haltung'),h.house);
+ const tm=v=>/^\d{1,2}:\d{2}$/.test(v)?v.padStart(5,'0'):null;h.outT=tm(g('Rausbringen'))||h.outT;h.inT=tm(g('Reinholen'))||h.inT;h.boxAdj=nb('Box wärmer',h.boxAdj);if(g('Unterstand'))h.shelter=isJ(g('Unterstand'));
+ S.none={minC:nb('Keine Decke geschoren',S.none.minC),minL:nb('Keine Decke langhaarig',S.none.minL)};
+ const sk=g('Sonneneinfluss');if(sk){const k=Object.keys(SUNL).find(k=>SUNL[k]===sk.toLowerCase());S.sunK=k!=null?+k:(pnum(sk)??S.sunK)}
+ const la=pnum(g('Breitengrad')),lo=pnum(g('Längengrad'));if(la!==null&&lo!==null)S.loc={lat:la,lon:lo,name:g('Ort')||'Ort'};
+ const vt=tm(g('Uhrzeit Stallbesuch'));if(vt)S.vt=vt;return{err}}
+const csvFile=(n,t)=>new File(['﻿'+t],n,{type:'text/csv'});
+function dl(n,t){const u=URL.createObjectURL(new Blob(['﻿'+t],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=u;a.download=n;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000)}
+function csvmsg(t,bad){const m=$('#csvmsg');if(m){m.innerHTML=t;m.className=bad?'warn':'mut'}}
+function expB(){dl('decken.csv',blanketsCSV());csvmsg(S.blankets.length+' Decken als decken.csv gespeichert (Ordner Downloads).')}
+function expH(){dl('pferd.csv',horseCSV());csvmsg('Pferd und Einstellungen als pferd.csv gespeichert (Ordner Downloads).')}
+async function shareCSV(){const f=[csvFile('decken.csv',blanketsCSV()),csvFile('pferd.csv',horseCSV())];
+ try{if(navigator.canShare&&navigator.canShare({files:f})){await navigator.share({files:f,title:'Eindeckhilfe Daten'});return}}catch(e){if(e&&e.name==='AbortError')return}
+ expB();expH();csvmsg('Teilen ist hier nicht möglich, die Dateien wurden stattdessen gespeichert.')}
+function impCSV(inp){const fs=[...inp.files];inp.value='';if(!fs.length)return;let msgs=[],errs=[];
+ Promise.all(fs.map(f=>f.text().then(t=>[f.name,t]))).then(list=>{
+  const kinds=list.map(([n,t])=>{const rows=parseCSV(t);if(!rows.length)return[n,null,rows];const h=rows[0].map(x=>x.trim().toLowerCase());return[n,h[0]==='feld'?'horse':h.includes('name')&&h.some(x=>x.startsWith('typ'))?'blk':null,rows]});
+  const nb=kinds.filter(k=>k[1]==='blk').reduce((a,k)=>a+k[2].length-1,0);
+  if(nb&&!confirm(`Deine Deckenliste wird durch ${nb} Decke(n) aus der Datei ersetzt. Fortfahren?`))return;
+  kinds.forEach(([n,k,rows])=>{
+   if(k==='blk'){const R=importBlankets(rows);if(R.out.length){S.blankets=R.out;msgs.push(`${R.out.length} Decken aus ${esc(n)} übernommen`)}else errs.push(`${esc(n)}: keine Decken gefunden`);errs.push(...R.err.map(esc))}
+   else if(k==='horse'){const R=importHorse(rows);msgs.push(`Pferd und Einstellungen aus ${esc(n)} übernommen`);errs.push(...R.err.map(esc))}
+   else errs.push(`${esc(n)}: unbekanntes Format (erste Spalte muss „Name“ bzw. „Feld“ heißen)`)});
+  save();csvmsg((msgs.length?msgs.join('.<br>')+'.':'')+(errs.length?'<br><span class="warn">Hinweise:<br>'+errs.join('<br>')+'</span>':''),!msgs.length);
+  if(msgs.some(m=>m.includes('Einstellungen')))load()}).catch(()=>csvmsg('Datei konnte nicht gelesen werden.',1))}
 
 function hero(){const p=S.photo;return`<div class="hero" style="${p?`background-image:linear-gradient(transparent 40%,rgba(0,0,0,.55)),url('${p}');min-height:150px`:''}">${esc(S.horse.name||'Eindeckhilfe')}</div>`}
 function rem(){const m=new Date(S.visit)-fromBase();if(m<=0)return'';return`<p class="mut">Zeitraum: ${Math.floor(m/36e5)} h ${Math.round(m%36e5/6e4)} min</p>`}
