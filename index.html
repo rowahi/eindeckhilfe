@@ -334,11 +334,11 @@ function drawH(){const h=S.horse,o=(a,v)=>Object.entries(a).map(([k,t])=>`<optio
 function drawM(){$('#v-more').innerHTML=`<div class="card"><h2>Standort</h2><p class="mut">Aktuell: ${S.loc?esc(S.loc.name):'nicht gesetzt'}</p>
  <div class="row"><button onclick="gps()">GPS verwenden</button></div>
  <label>Oder Ort suchen</label><div class="row"><input id="q" placeholder="z. B. Hamburg"><button class="s" style="flex:0" onclick="srch()">Suchen</button></div><div id="res"></div></div>
- <div class="card"><h2>Sicherung</h2><p class="mut">Pferd und Decken als Text exportieren oder auf einem anderen Handy importieren.</p>
+ <div class="card"><h2>Sicherung als Text</h2><p class="mut">Pferd und Decken als Text exportieren oder auf einem anderen Handy importieren.</p>
  <textarea id="bk" rows="4" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
  <div class="row"><button class="s" onclick="expo()">Code erzeugen</button><button class="s" onclick="shareCode()">Teilen (z. B. Threema)</button></div>
  <div class="row"><button class="s" onclick="copyCode()">Kopieren</button><button onclick="imp()">Importieren</button></div><p id="bkmsg" class="mut"></p></div>
- <div class="card"><h2>Tabellen (CSV)</h2><p class="mut">Für Excel, Numbers oder Google Sheets. Decken und Pferd werden als zwei Dateien gespeichert. Beim Import wird die Deckenliste ersetzt.</p>
+ <div class="card"><h2>Sicherung als Tabellen (CSV)</h2><p class="mut">Für Excel, Numbers oder Google Sheets. Decken und Pferd werden als zwei Dateien gespeichert. Beim Import wird die Deckenliste ersetzt.</p>
  <div class="row"><button class="s" onclick="expB()">Decken exportieren</button><button class="s" onclick="expH()">Pferd &amp; Einstellungen exportieren</button></div>
  <div class="row"><button class="s" onclick="shareCSV()">Beide teilen</button><button onclick="$('#csvf').click()">CSV importieren</button></div>
  <input id="csvf" type="file" accept=".csv,text/csv,text/plain,text/comma-separated-values" multiple hidden onchange="impCSV(this)"><p id="csvmsg" class="mut"></p></div>
