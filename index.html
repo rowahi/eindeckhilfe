@@ -334,6 +334,8 @@ function drawH(){const h=S.horse,o=(a,v)=>Object.entries(a).map(([k,t])=>`<optio
 function drawM(){$('#v-more').innerHTML=`<div class="card"><h2>Standort</h2><p class="mut">Aktuell: ${S.loc?esc(S.loc.name):'nicht gesetzt'}</p>
  <div class="row"><button onclick="gps()">GPS verwenden</button></div>
  <label>Oder Ort suchen</label><div class="row"><input id="q" placeholder="z. B. Hamburg"><button class="s" style="flex:0" onclick="srch()">Suchen</button></div><div id="res"></div></div>
+ <div class="card"><h2>Sonneneinfluss</h2><p class="mut">Wie stark die Sonne Pferd und Decke aufwärmt. Bei Pferd und Decke legst du die Farbe fest.</p>
+ <select onchange="S.sunK=+this.value;save();drawM()">${[[0,'aus'],[.5,'schwach'],[1,'normal'],[1.5,'stark']].map(x=>`<option value="${x[0]}"${+S.sunK===x[0]?' selected':''}>${x[1]}</option>`).join('')}</select></div>
  <div class="card"><h2>Sicherung als Text</h2><p class="mut">Pferd und Decken als Text exportieren oder auf einem anderen Handy importieren.</p>
  <textarea id="bk" rows="4" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
  <div class="row"><button class="s" onclick="expo()">Code erzeugen</button><button class="s" onclick="shareCode()">Teilen (z. B. Threema)</button></div>
@@ -342,8 +344,7 @@ function drawM(){$('#v-more').innerHTML=`<div class="card"><h2>Standort</h2><p c
  <div class="row"><button class="s" onclick="expB()">Decken exportieren</button><button class="s" onclick="expH()">Pferd &amp; Einstellungen exportieren</button></div>
  <div class="row"><button class="s" onclick="shareCSV()">Beide teilen</button><button onclick="$('#csvf').click()">CSV importieren</button></div>
  <input id="csvf" type="file" accept=".csv,text/csv,text/plain,text/comma-separated-values" multiple hidden onchange="impCSV(this)"><p id="csvmsg" class="mut"></p></div>
- <div class="card"><h2>Sonneneinfluss</h2><p class="mut">Wie stark die Sonne Pferd und Decke aufwärmt. Bei Pferd und Decke legst du die Farbe fest.</p>
- <select onchange="S.sunK=+this.value;save();drawM()">${[[0,'aus'],[.5,'schwach'],[1,'normal'],[1.5,'stark']].map(x=>`<option value="${x[0]}"${+S.sunK===x[0]?' selected':''}>${x[1]}</option>`).join('')}</select></div>
+
  <p class="mut">Wetterdaten: Open-Meteo.com. Alle Daten bleiben auf deinem Gerät. Die Empfehlung ist eine Entscheidungshilfe, prüfe dein Pferd immer selbst (Nacken und Flanke fühlen).</p>`}
 function gps(){navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>{S.loc={lat:p.coords.latitude,lon:p.coords.longitude,name:'GPS-Standort'};save();drawM();load()},()=>alert('Standort nicht verfügbar. Bitte Ort suchen.')):alert('Kein GPS verfügbar.')}
 async function srch(){const q=$('#q').value.trim();if(!q)return;
