@@ -24,7 +24,7 @@ button.s{background:var(--ac2);color:var(--tx)}button.d{background:var(--warn);c
 .big{font-size:1.6rem;font-weight:700;margin:2px 0}.mut{color:var(--mut);font-size:.9rem}
 .tag{display:inline-block;background:var(--ac2);border-radius:20px;padding:2px 10px;font-size:.8rem;margin:2px 4px 2px 0}
 .warn{color:var(--warn)}ul{padding-left:18px;margin:6px 0}
-.tile{border:1px solid var(--bd);border-radius:12px;padding:8px 10px;background:var(--bg);cursor:pointer;min-width:0}.trow{display:flex;align-items:center;gap:8px}.trow .tx{flex:1;min-width:0}.hs{flex:0 0 72px;width:72px;height:50px}.stk{display:grid;grid-template-columns:1fr;gap:8px}.tile.on{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac) inset}
+.tile{border:1px solid var(--bd);border-radius:12px;padding:8px 10px;background:var(--bg);cursor:pointer;min-width:0}.trow{display:flex;align-items:center;gap:8px}.trow .tx{flex:1;min-width:0}.hs{flex:0 0 72px;width:72px;height:50px}.hz{display:flex;flex-direction:column;align-items:center;flex:0 0 72px}.shoes{display:inline-flex;gap:2px;flex:0 0 auto}.shoes svg{width:13px;height:12px;fill:var(--bd)}.shoes svg.on{fill:#b8862b}.stk{display:grid;grid-template-columns:1fr;gap:8px}.tile.on{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac) inset}
 .tile b{font-size:.9rem}.tile .tl{display:flex;align-items:center;gap:6px}.tile .ic{font-size:1.3rem;margin-right:6px}.tile .tb{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:.85rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.tile .tb i{flex:0 0 10px;height:10px;border-radius:50%}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chips button{flex:0 1 auto;min-height:38px;padding:6px 10px;font-size:.85rem}
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom)}
@@ -151,6 +151,10 @@ function recommend(w){
 
 const cap=t=>t.charAt(0).toUpperCase()+t.slice(1);
 const amp=(q,span)=>{const bad=!(span>=8)&&(q.pen>=6||q.cold>2.5),mid=q.cold>0||q.hot>2||q.pen>0;return{bad,mid,col:bad?'#c4472f':mid?'#d9a521':'#3a9d5d'}};
+// Sicherheit der Wahl als 1–3 Hufeisen
+const stars=q=>q.cold>2.5||q.hot>5||q.pen>=6?1:(q.cold>0||q.hot>2||q.pen>0)?2:3;
+const SHOE='<path d="M3 13V7a5 5 0 0 1 10 0v6h-2.600V7a2.400 2.400 0 0 0-4.800 0v6z"/>';
+function shoes(n){const T=['','unsicher','Kompromiss','passt gut'][n];return`<span class="shoes" title="${T}" aria-label="Sicherheit: ${T}">${[1,2,3].map(i=>`<svg viewBox="0 0 16 14" class="${i<=n?'on':''}">${SHOE}</svg>`).join('')}</span>`}
 let SL=[],WHY=false,SHOW=false,ACT=-1; // ACT: -1 = eigener Zeitraum (Von/Bis), sonst Nummer des Halbtags
 const isDayAt=d=>{const o=tmin(S.horse.outT),n=tmin(S.horse.inT),t=d.getHours()*60+d.getMinutes();return o<n?(t>=o&&t<n):(t>=o||t<n)};
 function slots(){const o=tmin(S.horse.outT),n=tmin(S.horse.inT),B=[];
@@ -219,7 +223,7 @@ function tileHTML(i,t,w,sel,lab,sub,wide,extra,pre){
  const day=t?t.day:isDayAt(new Date((w.a.getTime()+w.b.getTime())/2)),ic=wico(day,wkind(w.a,w.b));
  const R=w.res.err?null:recommend(w.res);
  const hz=R?horseSVG(day,R.best.b.none?null:R.best.b):'';
- return`<div class="tile${wide?' wide':''}${sel?' on':''}" onclick="setWin(${i})"><div class="trow"><div class="tx">${t?'':`<div class="tl">${ic}<b>${lab}</b></div>`}${extra||''}${sub?`<div class="mut">${sub}</div>`:''}<div class="tb">${t?ic:''}${pre||''}${R?`<b>${esc(R.best.b.name)}</b>`:'keine Wetterdaten'}</div></div>${hz}</div></div>`}
+ return`<div class="tile${wide?' wide':''}${sel?' on':''}" onclick="setWin(${i})"><div class="trow"><div class="tx">${t?'':`<div class="tl">${ic}<b>${lab}</b></div>`}${extra||''}${sub?`<div class="mut">${sub}</div>`:''}<div class="tb">${t?ic:''}${pre||''}${R?`<b>${esc(R.best.b.name)}</b>`:'keine Wetterdaten'}</div></div>${hz?`<div class="hz">${hz}${shoes(stars(R.best))}</div>`:''}</div></div>`}
 function setWin(i){const was=(ACT===i&&SHOW);ACT=i;WHY=false;SHOW=!was;drawToday()}
 function toggleWhy(){WHY=!WHY;drawToday()}
 const fdt=d=>new Date(d).toLocaleString('de-DE',{weekday:'long',hour:'2-digit',minute:'2-digit'});
@@ -241,7 +245,7 @@ function drawToday(){
   ic=W?wico(true,wkind(from,to)):'';
   const H0=h;h='';
   h+=`<div class="card" style="cursor:pointer" onclick="toggleWhy()"><div class="tl" style="display:flex;align-items:center;gap:8px">${ic}<h2 style="margin:0">${title}</h2></div>
- <div class="mut" style="margin-top:6px">${lab}</div><div class="big">${esc(b.name)}</div>`;
+ <div class="mut" style="margin-top:6px;display:flex;align-items:center;gap:8px">${shoes(stars(q))}<span>${lab}</span></div><div class="big">${esc(b.name)}</div>`;
  if(!b.none)h+=`<div class="mut">${b.layers===2?'Zwei Schichten':esc(TYPES[b.type]||'')} · ${b.grams||0} g · geeignet ${r0(q.lo)} bis ${r0(q.hi)} °C für dein Pferd</div>`;
  h+=`<div style="margin-top:6px"><span class="tag">gefühlt min ${r0(w.minA)} °C</span><span class="tag">max ${r0(w.maxT)} °C</span><span class="tag">Wind ${r0(w.wind)} km/h</span><span class="tag">Regen ${w.rain.toFixed(1)} mm (${r0(w.prob)} %)</span>${w.sunMax>0?`<span class="tag">Sonne ${w.sunMax>=300?'stark':w.sunMax>=120?'mäßig':'schwach'}</span>`:''}</div>`;
  const airy=(big||q.hot>2)?R.all.find(x=>!x.b.none&&['sweat','fleece'].includes(x.b.type)&&x.b.name!==b.name):null;
