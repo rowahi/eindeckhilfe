@@ -95,7 +95,7 @@ const lf=b=>({under:b.under??['fleece','sweat','stable'].includes(b.type),over:b
 function recommend(w){
  const h=S.horse,cadj=h.cold==='cold'?-3:h.cold==='robust'?3:0,badj=+(h.boxAdj??1);
  const segs=w.segs.map(g=>{const box=g.kind==='box',adj=cadj+(box?badj:(h.shelter?0:-2));
-  return{...g,box,adj,eMin:g.minA+adj,eMax:g.maxT+adj,wet:!box&&(g.rain>=1||g.prob>=60),windy:!box&&g.wind>=30}});
+  return{...g,box,adj,eMin:g.minA+adj,eMax:g.maxT+adj,wet:!box&&isWet(g.rain,g.prob),windy:!box&&g.wind>=30}});
  const rg=b=>{const L=[b.minL,b.maxL],C=[b.minC,b.maxC];return h.coat==='long'?L:h.coat==='full'?C:[(L[0]+C[0])/2,(L[1]+C[1])/2]};
  const none={id:0,none:1,name:'Keine Decke',minC:+S.none.minC,maxC:40,minL:+S.none.minL,maxL:40,waterproof:0,wind:1,place:'both',parts:[],layers:0};
  const baseLo=rg(none)[0],nC=+S.none.minC,nL=+S.none.minL;
@@ -155,9 +155,11 @@ const wd=d=>new Date(d).toLocaleDateString('de-DE',{weekday:'long'});
 const slotLab=t=>(t.first||dayWord(t.a)==='heute'?'Heute':wd(t.a))+(t.day?' am Tag':' in der Nacht');
 const slotFor=t=>t.first&&!t.day?'Diese Nacht':slotLab(t);
 // Wetterart eines Zeitabschnitts für das Symbol
-function wkind(a,b){if(!W)return'clear';let n=0,rain=0,tm=0,cl=0;
- W.time.forEach((t,k)=>{const d=new Date(t);if(d>a-36e5&&d<b){n++;rain+=W.precipitation[k]||0;tm+=W.temperature_2m[k];cl+=(W.cloud_cover?W.cloud_cover[k]:0)||0}});
- if(!n)return'clear';tm/=n;cl/=n;return rain>=.3?(tm<=.5?'snow':'rain'):cl>=75?'cloud':cl>=35?'part':'clear'}
+// Regen zählt nur, wenn das Pferd draußen ist (gleiche Regel wie bei der Empfehlung)
+const isWet=(rain,prob)=>rain>=.3||prob>=60;
+function wkind(a,b){if(!W)return'clear';let n=0,rain=0,tm=0,cl=0,pr=0;
+ W.time.forEach((t,k)=>{const d=new Date(t);if(d>a-36e5&&d<b&&kindAt(d)!=='box'){n++;rain+=W.precipitation[k]||0;pr=Math.max(pr,(W.precipitation_probability||[])[k]||0);tm+=W.temperature_2m[k];cl+=(W.cloud_cover?W.cloud_cover[k]:0)||0}});
+ if(!n)return'clear';tm/=n;cl/=n;return isWet(rain,pr)?(tm<=.5?'snow':'rain'):cl>=75?'cloud':cl>=35?'part':'clear'}
 function wico(day,k,z){z=z||30;if(k!=='rain'&&k!=='snow')return'';
  const sun='<circle cx="12" cy="12" r="5" fill="#f0b429"/><g stroke="#f0b429" stroke-width="2" stroke-linecap="round"><path d="M12 1.5v2M12 20.5v2M1.5 12h2M20.5 12h2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M4.6 19.4L6 18M18 6l1.4-1.4"/></g>';
  const moon='<path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z" fill="#9db4d9"/>';
