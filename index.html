@@ -24,7 +24,7 @@ button.s{background:var(--ac2);color:var(--tx)}button.d{background:var(--warn);c
 .big{font-size:1.6rem;font-weight:700;margin:2px 0}.mut{color:var(--mut);font-size:.9rem}
 .tag{display:inline-block;background:var(--ac2);border-radius:20px;padding:2px 10px;font-size:.8rem;margin:2px 4px 2px 0}
 .warn{color:var(--warn)}ul{padding-left:18px;margin:6px 0}
-.tile{border:1px solid var(--bd);border-radius:12px;padding:8px 10px;background:var(--bg);cursor:pointer;min-width:0}.trow{display:flex;align-items:center;gap:8px}.trow .tx{flex:1;min-width:0}.hs{flex:0 0 72px;width:72px;height:50px}.hz{display:flex;flex-direction:column;align-items:center;flex:0 0 72px}.shoes{display:inline-flex;gap:2px;flex:0 0 auto}.shoes svg{width:13px;height:12px;fill:var(--bd)}.shoes svg.on{fill:#b8862b}.stk{display:grid;grid-template-columns:1fr;gap:8px}.tile.on{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac) inset}
+.tile{border:1px solid var(--bd);border-radius:12px;padding:8px 10px;background:var(--bg);cursor:pointer;min-width:0}.trow{display:flex;align-items:center;gap:8px}.trow .tx{flex:1;min-width:0}.hs{flex:0 0 72px;width:72px;height:50px}.hz{display:flex;flex-direction:column;align-items:center;flex:0 0 72px}.shoes{display:inline-flex;gap:2px;flex:0 0 auto}.shoes svg{width:13px;height:12px;fill:var(--bd)}.shoes svg.on{fill:#b8862b}.tile .tb.nm{white-space:normal;overflow:visible;font-size:.95rem}.stk{display:grid;grid-template-columns:1fr;gap:8px}.tile.on{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac) inset}
 .tile b{font-size:.9rem}.tile .tl{display:flex;align-items:center;gap:6px}.tile .ic{font-size:1.3rem;margin-right:6px}.tile .tb{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:.85rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.tile .tb i{flex:0 0 10px;height:10px;border-radius:50%}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chips button{flex:0 1 auto;min-height:38px;padding:6px 10px;font-size:.85rem}
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom)}
@@ -223,7 +223,7 @@ function tileHTML(i,t,w,sel,lab,sub,wide,extra,pre){
  const day=t?t.day:isDayAt(new Date((w.a.getTime()+w.b.getTime())/2)),ic=wico(day,wkind(w.a,w.b));
  const R=w.res.err?null:recommend(w.res);
  const hz=R?horseSVG(day,R.best.b.none?null:R.best.b):'';
- return`<div class="tile${wide?' wide':''}${sel?' on':''}" onclick="setWin(${i})"><div class="trow"><div class="tx">${t?'':`<div class="tl">${ic}<b>${lab}</b></div>`}${extra||''}${sub?`<div class="mut">${sub}</div>`:''}<div class="tb">${t?ic:''}${pre||''}${R?`<b>${esc(R.best.b.name)}</b>`:'keine Wetterdaten'}</div></div>${hz?`<div class="hz">${hz}${shoes(stars(R.best))}</div>`:''}</div></div>`}
+ return`<div class="tile${wide?' wide':''}${sel?' on':''}" onclick="setWin(${i})"><div class="trow"><div class="tx">${t?'':`<div class="tl">${ic}<b>${lab}</b></div>`}${extra||''}${sub?`<div class="mut">${sub}</div>`:''}${t?`<div class="tl">${ic}<span>${(pre||'').replace(/:\s*$/,'')}</span></div>`:''}<div class="tb nm">${R?`<b>${esc(R.best.b.name)}</b>`:'keine Wetterdaten'}</div></div>${hz?`<div class="hz">${hz}${shoes(stars(R.best))}</div>`:''}</div></div>`}
 function setWin(i){const was=(ACT===i&&SHOW);ACT=i;WHY=false;SHOW=!was;drawToday()}
 function toggleWhy(){WHY=!WHY;drawToday()}
 const fdt=d=>new Date(d).toLocaleString('de-DE',{weekday:'long',hour:'2-digit',minute:'2-digit'});
