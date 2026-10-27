@@ -39,15 +39,24 @@ nav button{flex:1;background:none;color:var(--mut);border-radius:0;padding:14px 
 const $=s=>document.querySelector(s),K='eindeck-v1';
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const r1=x=>Math.round(x*2)/2,r0=x=>Math.round(x);
-const def=g=>{const c=14-g*.055;return{minC:r1(c),maxC:r1(c+8),minL:r1(c-10),maxL:r1(c-2)}};
+// Modell: Ein Standardpferd (Empfindlichkeit 0) braucht ab BASE °C gefühlt keine Decke.
+// Jede Decke hat einen Wärmewert (°C): sie verschiebt diese Grenze nach unten. Ihr Bereich ist BAND °C breit.
+const BASE=4,BAND=8;
+const insDef=(t,g)=>{g=+g||0;const v=g*.055;return r1(t==='fleece'?Math.max(4,v):t==='sweat'?Math.max(2,v):v)};
+const sens=()=>+(S.horse.sens??0);
+const bRange=ins=>{const lo=BASE-ins-sens();return[lo,lo+BAND]};
+function migrate(){const n=S.none||{minC:14,minL:4};
+ S.blankets.forEach(b=>{if(b.ins==null)b.ins=b.minL!=null?r1(Math.max(0,(+n.minL)-b.minL)):insDef(b.type,b.grams);delete b.minC;delete b.maxC;delete b.minL;delete b.maxL});
+ const h=S.horse;if(h.sens==null)h.sens=(h.coat==='full'?-10:h.coat==='partial'?-5:0)+(h.cold==='cold'?-3:h.cold==='robust'?3:0);delete h.coat;delete h.cold;delete S.none}
 const loc16=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,16);
 const nextVisit=()=>{const d=new Date();d.setDate(d.getDate()+1);d.setHours(17,30,0,0);return loc16(d)};
 const COLORS={dark:'Dunkel',mid:'Mittel',light:'Hell'},SUNF={dark:1,mid:.7,light:.4};
 const TYPES={rain:'Regendecke',outdoor:'Outdoor-Winterdecke',fleece:'Fleece',sweat:'Abschwitzdecke',stable:'Stalldecke',liner:'Liner (für bestimmte Decken)'};
 const PLACE={outdoor:'nur draußen',box:'nur Box',both:'draußen & Box'};
 let S;try{S=JSON.parse(localStorage.getItem(K))}catch(e){}
-S=Object.assign({from:'',sunK:1,none:{minC:14,minL:4},vt:'17:30',photo:null,horse:{name:'',coat:'long',cold:'normal',house:'open',shelter:false},blankets:[],visit:'',loc:null,manual:{minA:0,maxT:8,wind:10,rain:0}},S||{});
+S=Object.assign({from:'',sunK:1,vt:'17:30',photo:null,horse:{name:'',sens:0,house:'open',shelter:false},blankets:[],visit:'',loc:null,manual:{minA:0,maxT:8,wind:10,rain:0}},S||{});
 S.horse=Object.assign({outT:'07:00',inT:'17:00',boxAdj:1,color:'mid'},S.horse);if(S.horse.house==='paddock')S.horse.house='open';
+migrate();
 if(!S.visit||new Date(S.visit)<new Date())S.visit=nextVisit();
 S.from=''; // Von beginnt beim Start immer bei jetzt
 const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
@@ -93,27 +102,25 @@ function analyse(a0,b0){
 
 const lf=b=>({under:b.under??['fleece','sweat','stable'].includes(b.type),over:b.over??!['fleece','sweat'].includes(b.type)});
 function recommend(w){
- const h=S.horse,cadj=h.cold==='cold'?-3:h.cold==='robust'?3:0,badj=+(h.boxAdj??1);
+ const h=S.horse,cadj=sens(),badj=+(h.boxAdj??1);
  const segs=w.segs.map(g=>{const box=g.kind==='box',adj=cadj+(box?badj:(h.shelter?0:-2));
   return{...g,box,adj,eMin:g.minA+adj,eMax:g.maxT+adj,wet:!box&&isWet(g.rain,g.prob),windy:!box&&g.wind>=30}});
- const rg=b=>{const L=[b.minL,b.maxL],C=[b.minC,b.maxC];return h.coat==='long'?L:h.coat==='full'?C:[(L[0]+C[0])/2,(L[1]+C[1])/2]};
- const none={id:0,none:1,name:'Keine Decke',minC:+S.none.minC,maxC:40,minL:+S.none.minL,maxL:40,waterproof:0,wind:1,place:'both',parts:[],layers:0};
- const baseLo=rg(none)[0],nC=+S.none.minC,nL=+S.none.minL;
+ const rg=b=>b.none?[BASE,40]:[BASE-b.ins,BASE-b.ins+BAND]; // im Maßstab des Standardpferds (Empfindlichkeit steckt in adj)
+ const none={id:0,none:1,name:'Keine Decke',ins:0,waterproof:0,wind:1,place:'both',parts:[],layers:0};
+ const baseLo=BASE,I=b=>+b.ins||0;
  const act=S.blankets.filter(b=>b.status==='ok'),liners=act.filter(b=>b.type==='liner'),decks=act.filter(b=>b.type!=='liner');
  // Teile: Decke allein oder Decke mit passendem Liner (zählt als eine Schicht)
- const withLiner=(b,l)=>{const gL=Math.max(0,nL-Math.min(l.minL,nL)),gC=Math.max(0,nC-Math.min(l.minC,nC));
-  return{...b,name:b.name+' mit '+l.name,grams:(+b.grams||0)+(+l.grams||0),minL:Math.min(b.minL,nL)-gL,maxL:b.maxL-gL,minC:Math.min(b.minC,nC)-gC,maxC:b.maxC-gC,parts:[b.id,l.id],layers:1,base:b,liner:l}};
+ const withLiner=(b,l)=>({...b,name:b.name+' mit '+l.name,grams:(+b.grams||0)+(+l.grams||0),ins:I(b)+I(l),parts:[b.id,l.id],layers:1,base:b,liner:l});
  const pieces=[];decks.forEach(b=>{pieces.push({...b,parts:[b.id],layers:1,base:b});liners.filter(l=>(l.fits||[]).includes(b.id)).forEach(l=>pieces.push(withLiner(b,l)))});
- const adds=(x,y)=>+x.grams>0||x.minL<nL||x.minC<nC||(x.waterproof&&!y.waterproof)||(x.wind&&!y.wind); // trägt die Decke neben der anderen etwas bei?
+ const adds=(x,y)=>I(x)>=2||(x.waterproof&&!y.waterproof)||(x.wind&&!y.wind); // trägt die Decke neben der anderen etwas bei?
  const cand=[none,...pieces];
  pieces.forEach(u=>pieces.forEach(o=>{
   if(u.base.id===o.base.id||!lf(u.base).under||!lf(o.base).over)return;
   // beide Decken müssen etwas beitragen (Wärme, Wasser- oder Winddichtigkeit), sonst keine Kombination
   if(!adds(o,u)||!adds(u,o))return;
   if((u.place==='box'&&o.place==='outdoor')||(u.place==='outdoor'&&o.place==='box'))return;
-  const gL=Math.max(0,nL-Math.min(u.minL,nL)),gC=Math.max(0,nC-Math.min(u.minC,nC)); // wie viel die Unterdecke die Kältegrenze nach unten schiebt
   cand.push({id:'c'+u.id+'-'+o.id,name:u.name+' + '+o.name,type:'combo',grams:(+u.grams||0)+(+o.grams||0),
-   minL:Math.min(o.minL,nL)-gL,maxL:o.maxL-gL,minC:Math.min(o.minC,nC)-gC,maxC:o.maxC-gC,
+   ins:I(u)+I(o),
    place:(u.place==='box'||o.place==='box')?'box':(u.place==='outdoor'||o.place==='outdoor')?'outdoor':'both',
    color:o.color,waterproof:o.waterproof,wind:o.wind,parts:[...u.parts,...o.parts],layers:2,under:u,over:o})}));
  const evaluate=ss=>{const single=ss.length===1;
@@ -128,7 +135,7 @@ function recommend(w){
     const cMin=Math.min(...s.hrs.map(x=>x.A+s.adj+(F-.7)*x.r/100*K)),cMax=Math.max(...s.hrs.map(x=>x.T+s.adj+F*x.r/100*K));
     top=Math.max(top,cMax);
     // Regen: eine dünne Regendecke (0 g) staut kaum Wärme und passt dann auch bei warmem Wetter
-    const hiS=s.wet&&!b.none&&b.waterproof&&(+b.grams||0)===0?hi+10:hi;
+    const hiS=s.wet&&!b.none&&b.waterproof&&I(b)<2?hi+10:hi;
     cold=Math.max(cold,lo-cMin);hot=Math.max(hot,cMax-hiS);
     if(s.wet&&!b.waterproof)pen+=10;if(s.windy&&!b.wind)pen+=1.5;
     if(!single&&(s.box?b.place==='outdoor':b.place==='box'))pen+=2.5}
@@ -241,7 +248,7 @@ function drawToday(){
  if(R.alt)h+=`<div class="mut">Alternative: <b>${esc(R.alt.b.name)}</b>${R.alt.cold>q.cold+.25?' (kann zu kalt sein)':R.alt.hot>q.hot+.25?' (kann zu warm sein)':''}</div>`;
  if(airy)h+=`<div class="mut">Luftig (staut keine Wärme): <b>${esc(airy.b.name)}</b></div>`;
  h+=`<div class="mut" style="margin-top:6px">${WHY?'▲ Warum? (antippen zum Schließen)':'▼ Warum? (antippen)'}</div>`;
- if(WHY){h+=`<ul><li>Für dein Pferd (${S.horse.coat==='long'?'langhaarig':S.horse.coat==='full'?'Vollschur':'Teilschur'}) fühlt sich der Zeitraum so an:</li>`;
+ if(WHY){h+=`<ul><li>Für dein Pferd (Empfindlichkeit ${sens()>0?'+':''}${sens()}) fühlt sich der Zeitraum so an:</li>`;
  R.segs.forEach(g=>{h+=`<li>${g.box?'In der Box':'Draußen'}: ${r0(g.eMin)} bis ${r0(g.eMax)} °C${g.wet?' · Regen':''}${g.windy?' · starker Wind':''}</li>`});
  if(q.sunUp>=1)h+=`<li>Sonne draußen: ${b.none?'Fell ('+COLORS[S.horse.color||'mid'].toLowerCase()+')':'Decke ('+COLORS[b.color||'mid'].toLowerCase()+')'} wird bis ca. ${r0(q.sunUp)} °C wärmer, die Spanne geht dann bis ${r0(R.eMax+q.sunUp)} °C.</li>`;
  if(R.wet)h+='<li>Regen draußen erwartet: wasserdichte Decke nötig.</li>';
@@ -293,18 +300,12 @@ function inH(n){S.visit=loc16(new Date(fromBase().getTime()+n*36e5));save();draw
 
 function drawB(){
  const el=$('#v-blk');
- if(E&&E.none){el.innerHTML=`<div class="card"><h2>Keine Decke</h2>
-  <p class="mut">Ab welcher gefühlten Temperatur kommt dein Pferd ohne Decke aus? Darunter empfiehlt die App eine Decke. Der Wert gilt nach den Abzügen für Frostigkeit und Haltung aus dem Pferdeprofil.</p>
-  <div class="g2"><div><label>Geschoren: ab °C</label><input id="nC" type="number" step=".5" value="${E.minC}"></div><div><label>Langhaarig: ab °C</label><input id="nL" type="number" step=".5" value="${E.minL}"></div></div>
-  <div class="row"><button onclick="saveN()">Speichern</button><button class="s" onclick="E=null;drawB()">Abbrechen</button><button class="s" onclick="resetN()">Standard</button></div></div>`;return}
  if(E){const b=E,o=(a,v)=>Object.entries(a).map(([k,t])=>`<option value="${k}"${k===v?' selected':''}>${t}</option>`).join('');
   el.innerHTML=`<div class="card"><h2>${b.isNew?'Neue Decke':'Decke bearbeiten'}</h2>
   <label>Name</label><input id="bn" value="${esc(b.name)}">
   <div class="g2"><div><label>Typ</label><select id="bt" onchange="typeCh()">${o(TYPES,b.type)}</select></div><div><label>Füllung (g)</label><input id="bg" type="number" value="${b.grams}" oninput="gch()"></div></div>
-  <details><summary>Temperaturbereich (automatisch, anpassbar)</summary>
-  <div class="g2"><div class="mut">Geschoren von<input id="bminC" type="number" step=".5" value="${b.minC}"></div><div class="mut">bis<input id="bmaxC" type="number" step=".5" value="${b.maxC}"></div>
-  <div class="mut">Langhaar von<input id="bminL" type="number" step=".5" value="${b.minL}"></div><div class="mut">bis<input id="bmaxL" type="number" step=".5" value="${b.maxL}"></div></div>
-  </details>
+  <label>Wärmewert (°C)</label><input id="bi" type="number" step=".5" value="${b.ins}" oninput="insTxt()">
+  <p class="mut" id="bitx"></p>
   <div id="lonly"${b.type==='liner'?'':' hidden'}><label>Passt zu diesen Decken</label>${S.blankets.filter(x=>x.type!=='liner'&&x.id!==b.id).map(x=>`<label><input type="checkbox" class="bk" value="${x.id}"${(b.fits||[]).includes(x.id)?' checked':''}>${esc(x.name)}</label>`).join('')||'<p class="mut">Lege zuerst Decken an.</p>'}
   <p class="mut">Ein Liner wird in die Decke eingelegt oder eingeknöpft und zählt mit ihr als eine Schicht.</p></div>
   <div id="bonly"${b.type==='liner'?' hidden':''}><label>Farbe der Decke (Sonne)</label><select id="bc">${o(COLORS,b.color||'mid')}</select>
@@ -319,47 +320,44 @@ function drawB(){
   <p class="mut">Für zwei Schichten: Beide Decken müssen etwas beitragen: eine Decke ohne Füllung (0 g) wird nur kombiniert, wenn sie etwas ergänzt, zum Beispiel wasserdicht über einer nicht wasserdichten Decke.</p>
   ${S.blankets.some(x=>x.type==='liner')?`<label>Passende Liner</label>${S.blankets.filter(x=>x.type==='liner').map(x=>`<label><input type="checkbox" class="lk" value="${x.id}"${(x.fits||[]).includes(b.id)?' checked':''}>${esc(x.name)} (${x.grams} g)</label>`).join('')}`:''}</div>
   <div class="row"><button onclick="saveB()">Speichern</button><button class="s" onclick="E=null;drawB()">Abbrechen</button>${b.isNew?'':'<button class="d" onclick="delB()">Löschen</button>'}</div></div>`;return}
- el.innerHTML=`<div class="card"><h2>Meine Decken</h2><div class="it"><div onclick="editN()" style="flex:1"><b>Keine Decke</b><div class="mut">${noneTxt()}</div></div><button class="s" onclick="editN()">Ändern</button></div>${S.blankets.map(b=>{const nm=ids=>ids.map(i=>(S.blankets.find(x=>x.id===i)||{}).name).filter(Boolean).map(esc).join(', ');
+ el.innerHTML=`<div class="card"><h2>Meine Decken</h2><div class="it"><div style="flex:1"><b>Keine Decke</b><div class="mut">${noneTxt()}</div></div></div>${S.blankets.map(b=>{const nm=ids=>ids.map(i=>(S.blankets.find(x=>x.id===i)||{}).name).filter(Boolean).map(esc).join(', ');
   const lin=S.blankets.filter(x=>x.type==='liner'&&(x.fits||[]).includes(b.id)).map(x=>x.id);
   const info=b.type==='liner'?`Liner · ${b.grams} g<br>${linerTxt(b)}${(b.fits||[]).length?'<br>passt zu: '+nm(b.fits):''}`:`${b.grams} g · ${COLORS[b.color||'mid'].toLowerCase()} · ${PLACE[b.place]}${lf(b).under&&lf(b).over?' · unten/oben':lf(b).under?' · Unterdecke':' · Oberdecke'}${b.waterproof?' · wasserdicht':''}<br>${rangeTxt(b)}${lin.length?'<br>Liner: '+nm(lin):''}`;
   return`<div class="it"><div onclick="editB(${b.id})" style="flex:1"><b>${esc(b.name)}</b><div class="mut">${info}</div></div>
   <select onchange="setSt(${b.id},this.value)"><option value="ok"${b.status==='ok'?' selected':''}>verfügbar</option><option value="wash"${b.status==='wash'?' selected':''}>in der Wäsche</option><option value="wet"${b.status==='wet'?' selected':''}>nass</option></select></div>`}).join('')||'<p class="mut">Noch keine Decken. Lege deine erste an.</p>'}
   <div class="row"><button onclick="editB()">+ Decke hinzufügen</button></div></div>`}
-function linerTxt(b){const g=Math.max(0,S.none.minL-b.minL),h=Math.max(0,S.none.minC-b.minC),c=S.horse.coat,v=c==='long'?g:c==='full'?h:(g+h)/2;return`erweitert den Bereich um ca. ${r0(v)} °C`}
-function noneTxt(){const c=S.horse.coat,n=S.none,w=esc(S.horse.name||'dein Pferd');
- if(c==='long')return`für ${w} (langhaarig): ab ${n.minL} °C`;
- if(c==='full')return`für ${w} (Vollschur): ab ${n.minC} °C`;
- return`für ${w} (Teilschur): ab ${r1((+n.minL+ +n.minC)/2)} °C`}
-function editN(){E={none:1,minC:S.none.minC,minL:S.none.minL};drawB()}
-function saveN(){const c=parseFloat($('#nC').value),l=parseFloat($('#nL').value);if(isNaN(c)||isNaN(l))return alert('Bitte beide Werte als Zahl eingeben.');S.none={minC:c,minL:l};E=null;save();drawB()}
-function resetN(){S.none={minC:14,minL:4};E=null;save();drawB()}
-function rangeTxt(b){const c=S.horse.coat;
- if(c==='long')return`für ${esc(S.horse.name||'dein Pferd')} (langhaarig): ${b.minL} bis ${b.maxL} °C`;
- if(c==='full')return`für ${esc(S.horse.name||'dein Pferd')} (Vollschur): ${b.minC} bis ${b.maxC} °C`;
- return`für ${esc(S.horse.name||'dein Pferd')} (Teilschur): ${r1((b.minL+b.minC)/2)} bis ${r1((b.maxL+b.maxC)/2)} °C`}
-function editB(id){E=id?{...S.blankets.find(b=>b.id===id)}:{id:Date.now(),isNew:1,name:'',type:'rain',grams:0,...def(0),place:'outdoor',color:'mid',waterproof:true,wind:false,neck:false,status:'ok'};drawB()}
-function typeCh(){const l=$('#bt').value==='liner';$('#lonly').hidden=!l;$('#bonly').hidden=l}
-function gch(){const d=def(+$('#bg').value||0);['minC','maxC','minL','maxL'].forEach(k=>$('#b'+k).value=d[k])}
+function linerTxt(b){return`Wärmewert +${r1(+b.ins||0)} °C, erweitert den Bereich der Decke um ${r1(+b.ins||0)} °C`}
+function noneTxt(){return`für ${esc(S.horse.name||'dein Pferd')}: ab gefühlt ${r0(BASE-sens())} °C (Empfindlichkeit im Pferdeprofil)`}
+function rangeTxt(b){const[lo,hi]=bRange(+b.ins||0);return`Wärmewert +${r1(+b.ins||0)} · für ${esc(S.horse.name||'dein Pferd')}: ${r0(lo)} bis ${r0(hi)} °C`}
+function editB(id){setTimeout(()=>{if($('#bi'))insTxt()},0);E=id?{...S.blankets.find(b=>b.id===id)}:{id:Date.now(),isNew:1,name:'',type:'rain',grams:0,ins:0,place:'outdoor',color:'mid',waterproof:true,wind:false,neck:false,status:'ok'};drawB()}
+function typeCh(){const l=$('#bt').value==='liner';$('#lonly').hidden=!l;$('#bonly').hidden=l;gch()}
+function gch(){$('#bi').value=insDef($('#bt').value,$('#bg').value);insTxt()}
+function insTxt(){const v=parseFloat($('#bi').value)||0,[lo,hi]=bRange(v),t=$('#bitx');if(!t)return;
+ t.innerHTML=$('#bt').value==='liner'?`Der Liner verschiebt die Kältegrenze der Decke um ${r1(v)} °C nach unten.`:`Wird aus der Füllung vorgeschlagen, du kannst ihn anpassen: ca. +15 normale, +25 dicke Decke. Für ${esc(S.horse.name||'dein Pferd')}: passend bei gefühlt <b>${r0(lo)} bis ${r0(hi)} °C</b>.`}
 function saveB(){const n=$('#bn').value.trim();if(!n)return alert('Bitte einen Namen eingeben.');
  const isL=$('#bt').value==='liner',po=isL||$('#bpo').checked,pb=isL||$('#bpb').checked;if(!po&&!pb)return alert('Bitte wählen: draußen und/oder in der Box einsetzbar.');
- const b={id:E.id,name:n,type:$('#bt').value,grams:+$('#bg').value||0,minC:+$('#bminC').value,maxC:+$('#bmaxC').value,minL:+$('#bminL').value,maxL:+$('#bmaxL').value,place:po&&pb?'both':po?'outdoor':'box',color:isL?'mid':$('#bc').value,hex:isL?undefined:$('#bhex').value,waterproof:!isL&&$('#bwp').checked,wind:!isL&&$('#bwi').checked,neck:!isL&&$('#bne').checked,under:!isL&&$('#bun').checked,over:!isL&&$('#bov').checked,status:E.status};
+ const b={id:E.id,name:n,type:$('#bt').value,grams:+$('#bg').value||0,ins:parseFloat($('#bi').value)||0,place:po&&pb?'both':po?'outdoor':'box',color:isL?'mid':$('#bc').value,hex:isL?undefined:$('#bhex').value,waterproof:!isL&&$('#bwp').checked,wind:!isL&&$('#bwi').checked,neck:!isL&&$('#bne').checked,under:!isL&&$('#bun').checked,over:!isL&&$('#bov').checked,status:E.status};
  if(isL)b.fits=[...document.querySelectorAll('.bk')].filter(x=>x.checked).map(x=>+x.value);
  else{const on=[...document.querySelectorAll('.lk')].filter(x=>x.checked).map(x=>+x.value);S.blankets.forEach(l=>{if(l.type==='liner'){l.fits=(l.fits||[]).filter(i=>i!==b.id);if(on.includes(l.id))l.fits.push(b.id)}})}
  const i=S.blankets.findIndex(x=>x.id===b.id);i<0?S.blankets.push(b):S.blankets[i]=b;E=null;save();drawB()}
 function delB(){if(confirm('Decke löschen?')){S.blankets=S.blankets.filter(b=>b.id!==E.id);S.blankets.forEach(l=>{if(l.fits)l.fits=l.fits.filter(i=>i!==E.id)});E=null;save();drawB()}}
 function setSt(id,v){S.blankets.find(b=>b.id===id).status=v;save()}
 
+const sl=v=>(+v>0?'+':'')+(+v);
+const svt=()=>`Ohne Decke wohl ab gefühlt ${r0(BASE-sens())} °C (Wetterbericht, vor Abzug für Wind, fehlenden Unterstand und Box).`;
 function drawH(){const h=S.horse,o=(a,v)=>Object.entries(a).map(([k,t])=>`<option value="${k}"${k===v?' selected':''}>${t}</option>`).join('');
  $('#v-horse').innerHTML=`<div class="card"><h2>Mein Pferd</h2>
  <label>Name</label><input value="${esc(h.name)}" onchange="S.horse.name=this.value;save()">
- <label>Foto (für den Kopf der Startseite)</label><input type="file" accept="image/*" onchange="photo(this.files[0])">${S.photo?'<div class="row"><button class="s" onclick="S.photo=null;save();drawH()">Foto entfernen</button></div>':''}<label>Haarkleid</label><select onchange="S.horse.coat=this.value;save()">${o({long:'Langhaarig (nicht geschoren)',partial:'Teilschur (Deckenschur, Jagdschur, Brustschur)',full:'Vollschur'},h.coat)}</select>
+ <label>Foto (für den Kopf der Startseite)</label><input type="file" accept="image/*" onchange="photo(this.files[0])">${S.photo?'<div class="row"><button class="s" onclick="S.photo=null;save();drawH()">Foto entfernen</button></div>':''}<label>Empfindlichkeit: <b id="sv">${sl(h.sens)}</b></label><input type="range" min="-20" max="10" step="1" value="${h.sens}" oninput="S.horse.sens=+this.value;$('#sv').textContent=sl(this.value);$('#svt').textContent=svt()" onchange="save()" style="width:100%">
+ <div class="mut" style="display:flex;justify-content:space-between;font-size:.8rem"><span>−20 sehr empfindlich</span><span>0 Standard</span><span>+10 robust</span></div>
+ <p class="mut" id="svt">${svt()}</p>
+ <p class="mut">0 = Standardpferd mit vollem Winterfell. Etwa −5 für ein empfindliches Pferd, −10 bei Schur, −15 für ein geschorenes, empfindliches Pferd. Nach Erfahrung fein nachstellen.</p>
  <label>Fellfarbe (Sonne wärmt dunkle Tiere stärker)</label><select onchange="S.horse.color=this.value;save()">${o(COLORS,h.color)}</select>
- <label>Frostigkeit</label><select onchange="S.horse.cold=this.value;save()">${o({robust:'Robust',normal:'Normal',cold:'Eher verfroren (alt, dünn, Vollblut)'},h.cold)}</select>
- <label>Haltung</label><select onchange="S.horse.house=this.value;save();drawH()">${o({open:'Draußen (Weide, Paddock, Offenstall)',box:'Box',mixed:'Tagsüber draußen, nachts Box'},h.house)}</select>
+  <label>Haltung</label><select onchange="S.horse.house=this.value;save();drawH()">${o({open:'Draußen (Weide, Paddock, Offenstall)',box:'Box',mixed:'Tagsüber draußen, nachts Box'},h.house)}</select>
  ${h.house==='mixed'?`<div class="g2"><div><label>Rausbringen um</label><input type="time" value="${h.outT}" onchange="S.horse.outT=this.value||'07:00';save()"></div><div><label>Reinholen um</label><input type="time" value="${h.inT}" onchange="S.horse.inT=this.value||'17:00';save()"></div></div>`:''}
  ${h.house!=='open'?`<label>Box ist wärmer als draußen um (°C)</label><input type="number" step=".5" value="${h.boxAdj}" onchange="S.horse.boxAdj=parseFloat(this.value)||0;save()"><p class="mut">Wind und Regen werden in der Box nicht gerechnet.</p>`:''}
  <label><input type="checkbox"${h.shelter?' checked':''} onchange="S.horse.shelter=this.checked;save()">Unterstand / Witterungsschutz draußen vorhanden</label>
- <p class="mut">Nach einer Schur einfach das Haarkleid hier umstellen, die Empfehlung passt sich sofort an.</p></div>`}
+ <p class="mut">Nach einer Schur einfach die Empfindlichkeit verstellen, die Empfehlung passt sich sofort an.</p></div>`}
 
 function drawM(){$('#v-more').innerHTML=`<div class="card"><h2>Standort</h2><p class="mut">Aktuell: ${S.loc?esc(S.loc.name):'nicht gesetzt'}</p>
  <div class="row"><button onclick="gps()">GPS verwenden</button></div>
@@ -383,7 +381,7 @@ async function srch(){const q=$('#q').value.trim();if(!q)return;
  catch(e){$('#res').innerHTML='<p class="warn">Suche nicht möglich (Internet?).</p>'}}
 function pick(i){const r=G[i];S.loc={lat:r.latitude,lon:r.longitude,name:r.name};save();drawM();load()}
 const b64e=t=>btoa(unescape(encodeURIComponent(t))),b64d=t=>decodeURIComponent(escape(atob(t)));
-function code(){return'EH1:'+b64e(JSON.stringify({horse:S.horse,blankets:S.blankets,none:S.none}))}
+function code(){return'EH1:'+b64e(JSON.stringify({horse:S.horse,blankets:S.blankets}))}
 function bkmsg(t){const m=$('#bkmsg');if(m)m.textContent=t}
 function expo(){$('#bk').value=code();bkmsg('Code erzeugt ('+$('#bk').value.length+' Zeichen). Mit „Teilen“ oder „Kopieren“ weitergeben.')}
 async function shareCode(){const c=code();$('#bk').value=c;
@@ -397,7 +395,7 @@ function imp(){let t=($('#bk').value||'').trim();if(!t)return bkmsg('Das Feld is
   if(k>=0){j=JSON.parse(b64d(t.slice(k+4).replace(/[^A-Za-z0-9+\/=]/g,'')))}
   else{t=t.replace(/[\u201C\u201D\u201E]/g,'"').replace(/[\u2018\u2019]/g,"'");j=JSON.parse(t.slice(t.indexOf('{'),t.lastIndexOf('}')+1))}
   if(!j||(!j.horse&&!Array.isArray(j.blankets)))throw 0;
-  if(j.horse){S.horse=Object.assign(S.horse,j.horse);if(S.horse.house==='paddock')S.horse.house='open'}if(Array.isArray(j.blankets))S.blankets=j.blankets;if(j.none&&!isNaN(j.none.minC)&&!isNaN(j.none.minL))S.none={minC:+j.none.minC,minL:+j.none.minL};
+  if(j.horse){if(j.horse.sens==null)delete S.horse.sens;S.horse=Object.assign(S.horse,j.horse);if(S.horse.house==='paddock')S.horse.house='open'}if(Array.isArray(j.blankets))S.blankets=j.blankets;if(j.none&&!isNaN(j.none.minL))S.none={minC:+j.none.minC,minL:+j.none.minL};migrate();
   save();bkmsg('Importiert: '+S.blankets.length+' Decken'+(j.horse?' und Pferdeprofil':'')+'.')}
  catch(e){bkmsg('Der Text ist unvollständig oder verändert. Bitte den Code erneut erzeugen und komplett einfügen.')}}
 
@@ -409,12 +407,12 @@ const csvLine=a=>a.map(csvq).join(';');
 const STATUS={ok:'verfügbar',wash:'in der Wäsche',wet:'nass'};
 const COAT={long:'langhaarig',partial:'Teilschur',full:'Vollschur'},COLDL={robust:'robust',normal:'normal',cold:'verfroren'},HOUSE={open:'draußen',box:'Box',mixed:'tagsüber draußen, nachts Box'},SUNL={0:'aus',0.5:'schwach',1:'normal',1.5:'stark'};
 const rev=(m,v,d)=>{v=String(v||'').trim().toLowerCase();const k=Object.keys(m).find(k=>k.toLowerCase()===v||String(m[k]).toLowerCase()===v||String(m[k]).toLowerCase().startsWith(v)&&v.length>2);return k??d};
-const BH=['Name','Typ','Füllung g','Geschoren von °C','Geschoren bis °C','Langhaar von °C','Langhaar bis °C','draußen','Box','wasserdicht','winddicht','Halsteil','Unterdecke','Oberdecke','Helligkeit','Farbton','Status','Liner passt zu'];
+const BH=['Name','Typ','Füllung g','Wärmewert °C','draußen','Box','wasserdicht','winddicht','Halsteil','Unterdecke','Oberdecke','Helligkeit','Farbton','Status','Liner passt zu'];
 function blanketsCSV(){const nm=i=>(S.blankets.find(x=>x.id===i)||{}).name||'';
- const rows=S.blankets.map(b=>{const L=b.type==='liner',f=lf(b);return[b.name,TYPES[b.type]||b.type,b.grams||0,num(b.minC),num(b.maxC),num(b.minL),num(b.maxL),JN(b.place!=='box'),JN(b.place!=='outdoor'),JN(b.waterproof),JN(b.wind),JN(b.neck),L?'':JN(f.under),L?'':JN(f.over),COLORS[b.color||'mid'],L?'':(b.hex||bcol(b)),STATUS[b.status||'ok'],L?(b.fits||[]).map(nm).filter(Boolean).join(', '):'']});
+ const rows=S.blankets.map(b=>{const L=b.type==='liner',f=lf(b);return[b.name,TYPES[b.type]||b.type,b.grams||0,num(b.ins||0),JN(b.place!=='box'),JN(b.place!=='outdoor'),JN(b.waterproof),JN(b.wind),JN(b.neck),L?'':JN(f.under),L?'':JN(f.over),COLORS[b.color||'mid'],L?'':(b.hex||bcol(b)),STATUS[b.status||'ok'],L?(b.fits||[]).map(nm).filter(Boolean).join(', '):'']});
  return[csvLine(BH),...rows.map(csvLine)].join('\r\n')}
-function horseCSV(){const h=S.horse,l=S.loc||{};const R=[['Feld','Wert'],['Name',h.name||''],['Haarkleid',COAT[h.coat]||h.coat],['Fellfarbe',COLORS[h.color||'mid']],['Frostigkeit',COLDL[h.cold]||h.cold],['Haltung',HOUSE[h.house]||h.house],['Rausbringen um',h.outT||''],['Reinholen um',h.inT||''],['Box wärmer um °C',num(h.boxAdj)],['Unterstand draußen',JN(h.shelter)],
- ['Keine Decke geschoren ab °C',num(S.none.minC)],['Keine Decke langhaarig ab °C',num(S.none.minL)],['Sonneneinfluss',SUNL[+S.sunK]??num(S.sunK)],['Ort',l.name||''],['Breitengrad',l.lat!=null?num(l.lat):''],['Längengrad',l.lon!=null?num(l.lon):''],['Uhrzeit Stallbesuch',S.vt||'']];
+function horseCSV(){const h=S.horse,l=S.loc||{};const R=[['Feld','Wert'],['Name',h.name||''],['Empfindlichkeit',sl(h.sens||0)],['Fellfarbe',COLORS[h.color||'mid']],['Haltung',HOUSE[h.house]||h.house],['Rausbringen um',h.outT||''],['Reinholen um',h.inT||''],['Box wärmer um °C',num(h.boxAdj)],['Unterstand draußen',JN(h.shelter)],
+ ['Sonneneinfluss',SUNL[+S.sunK]??num(S.sunK)],['Ort',l.name||''],['Breitengrad',l.lat!=null?num(l.lat):''],['Längengrad',l.lon!=null?num(l.lon):''],['Uhrzeit Stallbesuch',S.vt||'']];
  return R.map(csvLine).join('\r\n')}
 function parseCSV(t){t=t.replace(/^﻿/,'');const first=t.split(/\r?\n/)[0]||'',sep=(first.split(';').length>=first.split(',').length)?';':(first.includes('\t')?'\t':',');
  const rows=[];let row=[],f='',q=false;for(let i=0;i<t.length;i++){const c=t[i];
@@ -424,9 +422,9 @@ function parseCSV(t){t=t.replace(/^﻿/,'');const first=t.split(/\r?\n/)[0]||'',
 function importBlankets(rows){const H=rows[0].map(x=>x.trim().toLowerCase()),col=n=>H.findIndex(h=>h.startsWith(n.toLowerCase())),g=(r,n)=>{const i=col(n);return i<0?'':(r[i]||'').trim()};
  const out=[],err=[],links=[];let id=Date.now();
  rows.slice(1).forEach((r,k)=>{const name=g(r,'Name');if(!name)return;const z=k+2;
-  const type=rev(TYPES,g(r,'Typ'),'rain'),grams=pnum(g(r,'Füllung'))??0,d=def(grams),nb=(n,dv)=>{const v=g(r,n);if(v==='')return dv;const x=pnum(v);if(x===null){err.push(`Zeile ${z}: „${n}“ ist keine Zahl (${v})`);return dv}return x};
+  const type=rev(TYPES,g(r,'Typ'),'rain'),grams=pnum(g(r,'Füllung'))??0,nb=(n,dv)=>{const v=g(r,n);if(v==='')return dv;const x=pnum(v);if(x===null){err.push(`Zeile ${z}: „${n}“ ist keine Zahl (${v})`);return dv}return x};
   const o=g(r,'draußen'),bx=g(r,'Box'),po=o===''?true:isJ(o),pb=bx===''?true:isJ(bx);
-  const b={id:id++,name,type,grams,minC:nb('Geschoren von',d.minC),maxC:nb('Geschoren bis',d.maxC),minL:nb('Langhaar von',d.minL),maxL:nb('Langhaar bis',d.maxL),place:po&&pb||(!po&&!pb)?'both':po?'outdoor':'box',color:rev(COLORS,g(r,'Helligkeit'),'mid'),waterproof:isJ(g(r,'wasserdicht')),wind:isJ(g(r,'winddicht')),neck:isJ(g(r,'Halsteil')),status:rev(STATUS,g(r,'Status'),'ok')};
+  const b={id:id++,name,type,grams,ins:nb('Wärmewert',insDef(type,grams)),place:po&&pb||(!po&&!pb)?'both':po?'outdoor':'box',color:rev(COLORS,g(r,'Helligkeit'),'mid'),waterproof:isJ(g(r,'wasserdicht')),wind:isJ(g(r,'winddicht')),neck:isJ(g(r,'Halsteil')),status:rev(STATUS,g(r,'Status'),'ok')};
   if(type!=='liner'){const u=g(r,'Unterdecke'),v=g(r,'Oberdecke');if(u!=='')b.under=isJ(u);if(v!=='')b.over=isJ(v);const hx=g(r,'Farbton');if(/^#[0-9a-f]{6}$/i.test(hx))b.hex=hx}
   else{b.fits=[];links.push([b,g(r,'Liner passt zu')])}
   out.push(b)});
@@ -434,9 +432,8 @@ function importBlankets(rows){const H=rows[0].map(x=>x.trim().toLowerCase()),col
  return{out,err}}
 function importHorse(rows){const m={};rows.slice(1).forEach(r=>{if(r[0])m[r[0].trim().toLowerCase()]=(r[1]||'').trim()});const g=n=>{const k=Object.keys(m).find(k=>k.startsWith(n.toLowerCase()));return k?m[k]:''};
  const h=S.horse,err=[],nb=(n,cur)=>{const v=g(n);if(v==='')return cur;const x=pnum(v);if(x===null){err.push(`„${n}“ ist keine Zahl (${v})`);return cur}return x};
- if(g('Name'))h.name=g('Name');h.coat=rev(COAT,g('Haarkleid'),h.coat);h.color=rev(COLORS,g('Fellfarbe'),h.color);h.cold=rev(COLDL,g('Frostigkeit'),h.cold);h.house=rev(HOUSE,g('Haltung'),h.house);
+ if(g('Name'))h.name=g('Name');h.sens=Math.max(-20,Math.min(10,nb('Empfindlichkeit',h.sens)));h.color=rev(COLORS,g('Fellfarbe'),h.color);h.house=rev(HOUSE,g('Haltung'),h.house);
  const tm=v=>/^\d{1,2}:\d{2}$/.test(v)?v.padStart(5,'0'):null;h.outT=tm(g('Rausbringen'))||h.outT;h.inT=tm(g('Reinholen'))||h.inT;h.boxAdj=nb('Box wärmer',h.boxAdj);if(g('Unterstand'))h.shelter=isJ(g('Unterstand'));
- S.none={minC:nb('Keine Decke geschoren',S.none.minC),minL:nb('Keine Decke langhaarig',S.none.minL)};
  const sk=g('Sonneneinfluss');if(sk){const k=Object.keys(SUNL).find(k=>SUNL[k]===sk.toLowerCase());S.sunK=k!=null?+k:(pnum(sk)??S.sunK)}
  const la=pnum(g('Breitengrad')),lo=pnum(g('Längengrad'));if(la!==null&&lo!==null)S.loc={lat:la,lon:lo,name:g('Ort')||'Ort'};
  const vt=tm(g('Uhrzeit Stallbesuch'));if(vt)S.vt=vt;return{err}}
