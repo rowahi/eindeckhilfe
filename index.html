@@ -223,7 +223,7 @@ function tileHTML(i,t,w,sel,lab,sub,wide,extra,pre){
  const day=t?t.day:isDayAt(new Date((w.a.getTime()+w.b.getTime())/2)),ic=wico(day,wkind(w.a,w.b));
  const R=w.res.err?null:recommend(w.res);
  const hz=R?horseSVG(day,R.best.b.none?null:R.best.b):'';
- return`<div class="tile${wide?' wide':''}${sel?' on':''}" onclick="setWin(${i})"><div class="trow"><div class="tx">${t?'':`<div class="tl">${ic}<b>${lab}</b></div>`}${extra||''}${sub?`<div class="mut">${sub}</div>`:''}${t?`<div class="tl">${ic}<span>${(pre||'').replace(/:\s*$/,'')}</span></div>`:''}<div class="tb nm">${R?`<b>${esc(R.best.b.name)}</b>`:'keine Wetterdaten'}</div></div>${hz?`<div class="hz">${hz}${shoes(stars(R.best))}</div>`:''}</div></div>`}
+ return`<div class="tile${wide?' wide':''}${sel?' on':''}" onclick="setWin(${i})"><div class="trow"><div class="tx">${t?'':`<div class="tl">${ic}<b>${lab}</b></div>`}${extra||''}${sub?`<div class="mut">${sub}</div>`:''}${t?`<div class="tl">${ic}<span>${(pre||'').replace(/:\s*$/,'')}</span></div>`:''}<div class="tb nm">${R?`${shoes(stars(R.best))}<b>${esc(R.best.b.name)}</b>`:'keine Wetterdaten'}</div></div>${hz||''}</div></div>`}
 function setWin(i){const was=(ACT===i&&SHOW);ACT=i;WHY=false;SHOW=!was;drawToday()}
 function toggleWhy(){WHY=!WHY;drawToday()}
 const fdt=d=>new Date(d).toLocaleString('de-DE',{weekday:'long',hour:'2-digit',minute:'2-digit'});
