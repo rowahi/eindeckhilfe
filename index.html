@@ -24,7 +24,7 @@ button.s{background:var(--ac2);color:var(--tx)}button.d{background:var(--warn);c
 .big{font-size:1.6rem;font-weight:700;margin:2px 0}.mut{color:var(--mut);font-size:.9rem}
 .tag{display:inline-block;background:var(--ac2);border-radius:20px;padding:2px 10px;font-size:.8rem;margin:2px 4px 2px 0}
 .warn{color:var(--warn)}ul{padding-left:18px;margin:6px 0}
-.tile{border:1px solid var(--bd);border-radius:12px;padding:8px 10px;background:var(--bg);cursor:pointer;min-width:0}.trow{display:flex;align-items:center;gap:8px}.trow .tx{flex:1;min-width:0}.hs{flex:0 0 64px;width:64px;height:44px}.stk{display:grid;grid-template-columns:1fr;gap:8px}.tile.on{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac) inset}
+.tile{border:1px solid var(--bd);border-radius:12px;padding:8px 10px;background:var(--bg);cursor:pointer;min-width:0}.trow{display:flex;align-items:center;gap:8px}.trow .tx{flex:1;min-width:0}.hs{flex:0 0 72px;width:72px;height:50px}.stk{display:grid;grid-template-columns:1fr;gap:8px}.tile.on{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac) inset}
 .tile b{font-size:.9rem}.tile .tl{display:flex;align-items:center;gap:6px}.tile .ic{font-size:1.3rem;margin-right:6px}.tile .tb{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:.85rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.tile .tb i{flex:0 0 10px;height:10px;border-radius:50%}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chips button{flex:0 1 auto;min-height:38px;padding:6px 10px;font-size:.85rem}
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom)}
@@ -175,11 +175,39 @@ function wico(day,k,z){z=z||30;if(k!=='rain'&&k!=='snow')return'';
 const KW=[['dunkelblau','#1f3a8a'],['hellblau','#7fb2e5'],['blau','#2f5fb3'],['türkis','#2aa6a6'],['seegrün','#2e8b6a'],['dunkelgrün','#1f5a3a'],['grün','#3b8f4a'],['pink','#e85a9b'],['rosa','#f1a3c4'],['lila','#7e4fb0'],['violett','#7e4fb0'],['bordeaux','#7a1f3d'],['rot','#c4372f'],['orange','#e8812c'],['gelb','#e6c63a'],['beige','#d8c3a0'],['braun','#7b4a2a'],['schwarz','#25252a'],['anthrazit','#3a3d44'],['grau','#8a8f98'],['silber','#b8bcc4'],['weiß','#f2f2f2'],['weiss','#f2f2f2']],
  CLS={dark:'#3a3f4a',mid:'#8f98a8',light:'#d5dae3'},HC={dark:'#3b2c26',mid:'#8a5a3a',light:'#d6bd98'};
 function bcol(b){if(!b)return'';if(b.hex)return b.hex;const n=(b.name||'').toLowerCase();const k=KW.find(x=>n.includes(x[0]));return k?k[1]:CLS[b.color||'mid']}
-function horseSVG(day,B){const coat=HC[S.horse.color||'mid'],parts=B?(B.layers===2?[B.under,B.over]:[B]):[],c1=parts[0]?bcol(parts[0]):'',c2=parts[1]?bcol(parts[1]):'',eye=(S.horse.color==='light')?'#222':'#fff',st='stroke="#0003" stroke-width=".6"';
- if(day){const bl=!c1?'':c2?`<rect x="17" y="13.5" width="24" height="14.5" rx="4" fill="${c1}" ${st}/><rect x="19" y="13.5" width="20" height="8.5" rx="3.5" fill="${c2}" ${st}/>`:`<rect x="17" y="13.5" width="24" height="14" rx="4" fill="${c1}" ${st}/>`;
-  return`<svg class="hs" viewBox="0 0 64 44" aria-hidden="true"><g fill="${coat}"><path d="M14 16C7 17 5 27 8 36c3-6 3-11 7-14z"/><rect x="16.500" y="26" width="3.600" height="15" rx="1.600"/><rect x="22" y="26" width="3.600" height="15" rx="1.600"/><rect x="37.500" y="26" width="3.600" height="15" rx="1.600"/><rect x="43" y="26" width="3.600" height="15" rx="1.600"/><rect x="13" y="13" width="33" height="16" rx="7"/><path d="M38 15 44 5l7-2-1 9-4 10-7 4z"/><path d="M48 4l6-3 8 10-2 3-6-1-5 2z"/><path d="M49 3l1-3 3 2zM52.500 1.500 55 .5l1 3z"/></g><path d="M45 4 38 16" stroke="#1a1210" stroke-width="2.200" stroke-linecap="round" fill="none"/>${bl}<circle cx="54" cy="6.500" r="1" fill="${eye}"/></svg>`}
- const bl=!c1?'':c2?`<ellipse cx="28" cy="29.500" rx="14" ry="7.200" fill="${c1}" ${st}/><ellipse cx="28" cy="28" rx="11" ry="5.200" fill="${c2}" ${st}/>`:`<ellipse cx="28" cy="29.500" rx="13.500" ry="6.800" fill="${c1}" ${st}/>`;
- return`<svg class="hs" viewBox="0 0 64 44" aria-hidden="true"><ellipse cx="32" cy="41" rx="28" ry="2" fill="#000" opacity=".12"/><g fill="${coat}"><path d="M10 31C4 31 2 37 5 40c4-2 6-4 9-6z"/><ellipse cx="29" cy="31" rx="21" ry="9"/><ellipse cx="14" cy="38" rx="8" ry="2.800"/><ellipse cx="44" cy="38.500" rx="8" ry="2.600"/><path d="M40 28l6-15 7-2-1 9-4 12z"/><path d="M48 12l6-3 8 9-2 3-6-1-5 2z"/><path d="M49 11l1-3 3 2zM52 9.500l3-1 .5 3z"/></g>${bl}<path d="M45 13l-5 11" stroke="#1a1210" stroke-width="2" stroke-linecap="round"/><path d="M53 14l2 .5" stroke="${eye}" stroke-width="1.400" stroke-linecap="round"/><text x="54" y="6" font-size="7" fill="var(--mut)" opacity=".8">z</text><text x="59" y="3.500" font-size="5" fill="var(--mut)" opacity=".8">z</text></svg>`}
+function shade(h,f){const n=parseInt(h.slice(1),16);let r=n>>16,g=n>>8&255,b=n&255;const m=x=>Math.max(0,Math.min(255,Math.round(f<0?x*(1+f):x+(255-x)*f)));return'#'+[m(r),m(g),m(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+function horseSVG2(day,coat,c1,c2,eye){const dk=shade(coat,-.35),lt=shade(coat,.18),st='stroke="#0004" stroke-width=".7"';
+ if(day){
+  const strap=c=>`<path d="M60 47.500v-1M66 47.500v-1" stroke="${shade(c,-.4)}" stroke-width="2.200"/>`;
+  const bl=!c1?'':`<path d="M43 25C54 26 64 29 74 26c5-1 8 2 10 7v13c-14 3-30 3-42 1-6-1-8-5-8-11 0-6 3-10 9-11z" fill="${c1}" ${st}/>`+(c2?`<path d="M45 25C55 26 64 29 74 26c5-1 8 2 9 6v8c-14 3-29 3-40 1-5-1-7-4-7-9 0-4 3-7 9-8z" fill="${c2}" ${st}/>`:'')+`<path d="M58 28v18M70 27v19" stroke="${shade(c2||c1,-.3)}" stroke-width="1.600" opacity=".8"/><path d="M36 41c14 4 32 4 48 1" stroke="#fff" stroke-opacity=".25" stroke-width="1.200" fill="none"/>`;
+  return`<svg class="hs" viewBox="0 0 120 84" aria-hidden="true"><ellipse cx="60" cy="80" rx="34" ry="2.500" fill="#000" opacity=".12"/>
+<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M77 47l1.500 15-1 14" stroke="${dk}" stroke-width="4.200"/><path d="M45 47c3 6 2 11-2 15l.5 14" stroke="${dk}" stroke-width="4.600"/></g>
+<path d="M31 31c-7 3-9 15-7 29 2 2 4-2 4-8 0-8 2-14 5-18z" fill="${dk}"/>
+<path d="M30 34c0-7 8-9 16-8 10 1 18 3 26 1 8-2 14 1 16 7 2 8-2 16-10 17-12 2-28 2-38 0-7-1-10-8-10-17z" fill="${coat}"/>
+<path d="M70 32C75 22 85 12 94 7l6 3c1 6-1 12-4 17-3 6-5 13-6 19-1 4-4 6-10 5z" fill="${coat}"/>
+<path d="M93 7c4-3 8-2 11 2 4 5 7 10 9 15 1 3-1 6-5 6s-8-3-11-6c-2-4-3-10-4-17z" fill="${coat}"/>
+<path d="M95 7l1-7 3 6zM98.500 6l2.500-6 1 7z" fill="${coat}"/>
+<path d="M94 6c-6 4-14 12-19 21 3-3 9-9 17-14z" fill="${dk}"/>
+<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M83 48l.5 14-.3 14" stroke="${coat}" stroke-width="4.400"/><path d="M38 46c4 6 2 12-2 16l1 14" stroke="${coat}" stroke-width="4.800"/></g>
+<g fill="#2a2522"><rect x="74.500" y="75.500" width="5" height="3" rx="1"/><rect x="41" y="75.500" width="5" height="3" rx="1"/><rect x="80.700" y="75.500" width="5.200" height="3" rx="1"/><rect x="34.500" y="75.500" width="5.200" height="3" rx="1"/></g>
+<path d="M33 33c2 8 6 13 12 15" stroke="${dk}" stroke-width="1" opacity=".45" fill="none"/><path d="M40 30c10-2 22 1 32 0" stroke="${lt}" stroke-width="2" opacity=".5" fill="none" stroke-linecap="round"/>
+${bl}<circle cx="101.500" cy="13" r="1.300" fill="${eye}"/><path d="M109.500 25.500l1 1" stroke="${dk}" stroke-width="1.200" stroke-linecap="round"/></svg>`}
+ const bl=!c1?'':`<path d="M36 45c14-3 30-2 44 3 4 4 6 10 4 16-14 4-34 4-50 2-6-2-8-8-6-14 2-4 4-6 8-7z" fill="${c1}" ${st}/>`+(c2?`<path d="M38 45c14-3 29-2 41 3 4 3 5 8 4 12-13 3-31 3-46 1-5-1-7-6-5-10 1-4 3-5 6-6z" fill="${c2}" ${st}/>`:'')+`<path d="M56 44v22M68 45v21" stroke="${shade(c2||c1,-.3)}" stroke-width="1.600" opacity=".8"/>`;
+ return`<svg class="hs" viewBox="0 0 120 84" aria-hidden="true"><ellipse cx="58" cy="79" rx="50" ry="3" fill="#000" opacity=".14"/>
+<path d="M22 62c-8 0-14 8-16 16h8c2-6 4-10 10-10z" fill="${dk}"/>
+<path d="M22 64c-2-12 8-20 22-21 14-1 26 1 36 5 8 4 10 12 8 20-2 6-12 8-28 8H34c-8 0-12-4-12-12z" fill="${coat}"/>
+<path d="M30 64c9-3 19 0 23 7 1 4-2 7-6 7H28c-5 0-5-9 2-14z" fill="${coat}" stroke="${dk}" stroke-width="1"/>
+<path d="M74 66c8 0 16 2 20 6 2 3 0 6-4 6H76z" fill="${coat}" stroke="${dk}" stroke-width="1"/>
+<path d="M72 54c4-12 11-23 20-29l7 3c-1 8-4 18-8 30z" fill="${coat}"/>
+<path d="M91 25c4-4 9-3 12 1 3 6 6 12 8 17 1 3-1 6-5 5-4-1-7-4-9-7-3-5-5-10-6-16z" fill="${coat}"/>
+<path d="M92 24v-7l4 6zM95 23l3-6 1 7z" fill="${coat}"/>
+<path d="M92 23c-6 7-12 17-15 27 4-8 10-17 18-23z" fill="${dk}"/>
+<g fill="#2a2522"><rect x="84" y="74.800" width="5" height="3.200" rx="1"/><rect x="24" y="74.500" width="5" height="3.500" rx="1"/></g>
+<path d="M36 48c12-3 26-2 40 2" stroke="${lt}" stroke-width="2" opacity=".5" fill="none" stroke-linecap="round"/>
+${bl}<path d="M99 30.500q2 1.500 4 .5" stroke="${eye}" stroke-width="1.200" fill="none" stroke-linecap="round"/><path d="M108.500 43.500l1 1" stroke="${dk}" stroke-width="1.200" stroke-linecap="round"/>
+<text x="104" y="16" font-size="9" font-family="sans-serif" fill="#8a8f98">z</text><text x="111" y="9" font-size="6" font-family="sans-serif" fill="#8a8f98">z</text></svg>`}
+function horseSVG(day,B){const parts=B?(B.layers===2?[B.under,B.over]:[B]):[];return horseSVG2(day,HC[S.horse.color||'mid'],parts[0]?bcol(parts[0]):'',parts[1]?bcol(parts[1]):'',S.horse.color==='light'?'#222':'#fff')}
+
 function tileHTML(i,t,w,sel,lab,sub,wide,extra,pre){
  const day=t?t.day:isDayAt(new Date((w.a.getTime()+w.b.getTime())/2)),ic=wico(day,wkind(w.a,w.b));
  const R=w.res.err?null:recommend(w.res);
