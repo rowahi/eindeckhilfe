@@ -249,8 +249,8 @@ function drawToday(){
   const H0=h;h='';
   h+=`<div class="card" style="cursor:pointer" onclick="toggleWhy()"><div class="tl" style="display:flex;align-items:center;gap:8px">${ic}<h2 style="margin:0">${title}</h2></div>
  <div class="mut" style="margin-top:6px;display:flex;align-items:center;gap:8px">${shoes(stars(q))}<span>${lab}</span></div><div class="big">${esc(b.name)}</div>`;
- const AD=(R.segs.find(g=>!g.box)||R.segs[0]).adj; // Bereich in gefühlter Temperatur (wie im Wetterbericht und im Verlauf)
- if(!b.none)h+=`<div class="mut">${b.layers===2?'Zwei Schichten':esc(TYPES[b.type]||'')} · ${b.grams||0} g · geeignet bei gefühlt ${r0(q.lo-AD)} bis ${r0(q.hi-AD)} °C</div>`;
+ const AD=sens(); // Bereich wie in der Deckenliste und im Verlauf
+ if(!b.none)h+=`<div class="mut">${b.layers===2?'Zwei Schichten':esc(TYPES[b.type]||'')} · ${b.grams||0} g · geeignet ${r0(q.lo-AD)} bis ${r0(q.hi-AD)} °C</div>`;
  h+=`<div style="margin-top:6px"><span class="tag">gefühlt min ${r0(w.minA)} °C</span><span class="tag">max ${r0(w.maxT)} °C</span><span class="tag">Wind ${r0(w.wind)} km/h</span><span class="tag">Regen ${w.rain.toFixed(1)} mm (${r0(w.prob)} %)</span>${w.sunMax>0?`<span class="tag">Sonne ${w.sunMax>=300?'stark':w.sunMax>=120?'mäßig':'schwach'}</span>`:''}</div>`;
  const airy=(big||q.hot>2)?R.all.find(x=>!x.b.none&&['sweat','fleece'].includes(x.b.type)&&x.b.name!==b.name):null;
  if(R.alt)h+=`<div class="mut">Alternative: <b>${esc(R.alt.b.name)}</b>${R.alt.cold>q.cold+.25?' (kann zu kalt sein)':R.alt.hot>q.hot+.25?' (kann zu warm sein)':''}</div>`;
@@ -287,18 +287,24 @@ function dayLbl(t0,t1,X){let o='';const d=new Date(t0);d.setHours(0,0,0,0);
   if(d.getTime()>t0)o+=`<line x1="${xa.toFixed(1)}" x2="${xa.toFixed(1)}" y1="${PB}" y2="${PB+6}" stroke="var(--mut)"/>`;
   o+=`<text x="${((xa+xb)/2).toFixed(1)}" y="${PB+16}" font-size="10" text-anchor="middle" fill="var(--mut)">${t}</text>`}
  return o}
-// Bereich der empfohlenen Decke je Halbtag, umgerechnet auf gefühlte Temperatur
-function slotRanges(){const h=S.horse;return SL.map(t=>{const w=analyse(t.a,t.b);if(w.err)return null;const R=recommend(w),q=R.best,mid=new Date((t.a.getTime()+t.b.getTime())/2);
- const adj=sens()+(kindAt(mid)==='box'?+(h.boxAdj??1):(h.shelter?0:-2)),b=q.b,c=b.none?'#8a8f98':bcol(b.layers===2?b.over:b);
- return{t,lo:q.lo-adj,hi:q.hi-adj,c,none:!!b.none}})}
+// Ortszuschlag: Box wärmer, draußen ohne Unterstand kälter. Er wird auf die Temperaturlinie gerechnet,
+// damit jede Decke im Verlauf immer denselben Bereich hat (wie in der Deckenliste).
+const locAdj=d=>{const h=S.horse;return kindAt(d)==='box'?+(h.boxAdj??1):(h.shelter?0:-2)};
+function slotRanges(){return SL.map(t=>{const w=analyse(t.a,t.b);if(w.err)return null;const q=recommend(w).best,b=q.b,c=b.none?'#8a8f98':bcol(b.layers===2?b.over:b);
+ return{t,lo:q.lo-sens(),hi:q.hi-sens(),c,none:!!b.none,F:SUNF[(b.none?S.horse.color:b.color)||'mid']}})}
 function bigChart(from,to){if(!W||!SL.length)return'';
  const t0=SL[0].a.getTime(),t1=SL[SL.length-1].b.getTime(),ix=[];
  W.time.forEach((t,k)=>{const d=new Date(t).getTime();if(d>=t0-36e5&&d<=t1)ix.push(k)});
  if(ix.length<2)return'';
- const RG=slotRanges().filter(Boolean),A=ix.map(k=>W.apparent_temperature[k]),cl=Math.min(...A),ch=Math.max(...A);
+ const RG=slotRanges().filter(Boolean),V=ix.map(k=>W.apparent_temperature[k]+locAdj(new Date(W.time[k]))),
+  K=+S.sunK,SR=W.shortwave_radiation||[],Fat=t=>{const g=RG.find(x=>t>=x.t.a.getTime()&&t<x.t.b.getTime());return g?g.F:SUNF[S.horse.color||'mid']},
+  // Linie "mit Sonne": Lufttemperatur plus Aufheizung durch die Sonne je nach Farbe der empfohlenen Decke (nur draußen, nur bei Sonne)
+  SV=ix.map(k=>{const d=new Date(W.time[k]),r=SR[k]||0;return K>0&&r>=50&&kindAt(d)!=='box'?W.temperature_2m[k]+locAdj(d)+Fat(d.getTime())*r/100*K:null}),A=[...V,...SV.filter(v=>v!=null)],cl=Math.min(...A),ch=Math.max(...A);
  const lo=Math.min(cl,...RG.map(r=>Math.max(r.lo,cl-6))),hi=Math.max(ch,...RG.map(r=>Math.min(r.hi,ch+6))),sp=Math.max(hi-lo,2);
  const X=t=>10+(Math.min(Math.max(t,t0),t1)-t0)/(t1-t0)*300,Y=v=>8+(hi-Math.min(hi,Math.max(lo,v)))/sp*(PB-14);
- const pts=ix.map(k=>`${X(new Date(W.time[k]).getTime()).toFixed(1)},${Y(W.apparent_temperature[k]).toFixed(1)}`).join(' ');
+ const pts=ix.map((k,i)=>`${X(new Date(W.time[k]).getTime()).toFixed(1)},${Y(V[i]).toFixed(1)}`).join(' ');
+ let sun='',run=[];const flush=()=>{if(run.length>1)sun+=`<polyline points="${run.join(' ')}" fill="none" stroke="#e8902c" stroke-width="1.6" stroke-dasharray="3 2" stroke-linejoin="round"/>`;else if(run.length===1)sun+=`<circle cx="${run[0].split(',')[0]}" cy="${run[0].split(',')[1]}" r="1.6" fill="#e8902c"/>`;run=[]};
+ ix.forEach((k,i)=>{if(SV[i]==null)return flush();run.push(`${X(new Date(W.time[k]).getTime()).toFixed(1)},${Y(SV[i]).toFixed(1)}`)});flush();
  const night=SL.map(t=>`<rect x="${X(t.a.getTime()).toFixed(1)}" y="2" width="${(X(t.b.getTime())-X(t.a.getTime())).toFixed(1)}" height="${PB-2}" fill="${t.day?'#ffd54a':'#1f3a8a'}" opacity="${t.day?'.14':'.38'}"/>`).join('');
  const sep=SL.slice(1).map(t=>`<line x1="${X(t.a.getTime()).toFixed(1)}" x2="${X(t.a.getTime()).toFixed(1)}" y1="2" y2="${PB}" stroke="var(--bd)"/>`).join('');
  const box=RG.map(r=>{const x1=X(r.t.a.getTime())+2,x2=X(r.t.b.getTime())-2,y1=Y(r.hi),y2=Y(r.lo);if(x2-x1<3)return'';
@@ -307,10 +313,10 @@ function bigChart(from,to){if(!W||!SL.length)return'';
  const fx=X(from.getTime()),tx=X(to.getTime());
  const sel=(SHOW&&ACT>=0)?`<rect x="${fx.toFixed(1)}" y="2" width="${Math.max(2,tx-fx).toFixed(1)}" height="${PB-2}" fill="none" stroke="var(--ac)" stroke-width="2" rx="3"/>`:'';
  const vt=new Date(S.visit).getTime(),vx=X(vt),mk=(vt>=t0&&vt<=t1)?`<line x1="${vx.toFixed(1)}" x2="${vx.toFixed(1)}" y1="4" y2="${PB+2}" stroke="#d9483b" stroke-width="2" stroke-dasharray="4 2"/><polygon points="${(vx-5).toFixed(1)},0 ${(vx+5).toFixed(1)},0 ${vx.toFixed(1)},7" fill="#d9483b"/><text x="${vx>240?(vx-4).toFixed(1):(vx+4).toFixed(1)}" y="20" font-size="9" font-weight="700" text-anchor="${vx>240?'end':'start'}" fill="#d9483b">Stallbesuch</text>`:'';
- return`<svg viewBox="0 0 320 ${PB+20}" style="width:100%">${night}${sep}${box}${sel}${rain}<polyline points="${pts}" fill="none" stroke="var(--ac)" stroke-width="2.4" stroke-linejoin="round"/>
+ return`<svg viewBox="0 0 320 ${PB+20}" style="width:100%">${night}${sep}${box}${sel}${rain}<polyline points="${pts}" fill="none" stroke="var(--ac)" stroke-width="2.4" stroke-linejoin="round"/>${sun}
  <text x="2" y="12" font-size="9" fill="var(--mut)">${r0(hi)}°</text><text x="2" y="${PB-4}" font-size="9" fill="var(--mut)">${r0(lo)}°</text>
  ${mk}${dayLbl(t0,t1,X)}</svg>
- <p class="mut" style="margin:2px 0 0">Linie: gefühlte Temperatur · Kästchen: Bereich der empfohlenen Decke (in ihrer Farbe) · blau: Regen · dunkelblau: Nacht · rot: Stallbesuch</p>`}
+ <p class="mut" style="margin:2px 0 0">Linie: gefühlte Temperatur am Platz des Pferdes (${S.horse.house==='open'?'':'Box '+sl(+(S.horse.boxAdj??1))+' °C, '}draußen ${S.horse.shelter?'±0':'−2'} °C)${sun?' · orange gestrichelt: mit Sonne (je nach Farbe der Decke)':''} · Kästchen: Bereich der empfohlenen Decke, gleich wie in der Deckenliste · blau: Regen · dunkelblau: Nacht · rot: Stallbesuch</p>`}
 
 function setVisit(v){if(v){S.visit=v;S.vt=v.slice(11,16);ACT=-1;SHOW=true;WHY=false;save();drawToday()}}
 function inH(n){S.visit=loc16(new Date(fromBase().getTime()+n*36e5));save();drawToday()}
