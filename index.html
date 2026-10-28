@@ -128,17 +128,20 @@ function recommend(w){
   const ok=b=>b.none||!single||(ss[0].box?b.place!=='outdoor':b.place!=='box');
   return cand.filter(ok).map(b=>{const[lo0,hi]=rg(b);
    const lo=b.none?lo0:Math.min(lo0,baseLo); // eine Decke ist nie kälter als keine Decke
-   let cold=0,hot=0,pen=0,top=-99;
+   let cold=0,hot=0,pen=0,top=-99,sc=0,sh=0,mc=0,mh=0,nh=0;
    const F=SUNF[(b.none?h.color:b.color)||'mid'],K=+S.sunK;
    for(const s of ss){
     // Sonne: Gefühlte Temperatur enthält schon einen Mittelwert, daher nur die Abweichung der Farbe; Lufttemperatur bekommt die volle Sonnenwirkung
-    const cMin=Math.min(...s.hrs.map(x=>x.A+s.adj+(F-.7)*x.r/100*K)),cMax=Math.max(...s.hrs.map(x=>x.T+s.adj+F*x.r/100*K));
-    top=Math.max(top,cMax);
     // Regen: eine dünne Regendecke (0 g) staut kaum Wärme und passt dann auch bei warmem Wetter
     const hiS=s.wet&&!b.none&&b.waterproof&&I(b)<2?hi+10:hi;
-    cold=Math.max(cold,lo-cMin);hot=Math.max(hot,cMax-hiS);
+    // Stunde für Stunde: wie weit liegt die gefühlte Temperatur unter bzw. über dem Bereich der Decke?
+    for(const x of s.hrs){const cA=x.A+s.adj+(F-.7)*x.r/100*K,cT=x.T+s.adj+F*x.r/100*K,dc=Math.max(0,lo-cA),dh=Math.max(0,cT-hiS);
+     top=Math.max(top,cT);sc+=dc;sh+=dh;mc=Math.max(mc,dc);mh=Math.max(mh,dh);nh++}
     if(s.wet&&!b.waterproof)pen+=10;if(s.windy&&!b.wind)pen+=1.5;
     if(!single&&(s.box?b.place==='outdoor':b.place==='box'))pen+=2.5}
+   // Mischform: zählt hauptsächlich, wie lange und wie stark es zu kalt/zu warm ist (Durchschnitt über die Stunden);
+   // sehr kalte Stunden (mehr als 4 °C unter dem Bereich) zählen zusätzlich, sehr warme (über 6 °C) etwas
+   if(nh){cold=sc/nh+Math.max(0,mc-4)*.5;hot=sh/nh+Math.max(0,mh-6)*.3}
    const slip=b.layers===2?.4:0; // zwei Schichten können verrutschen
    return{b,lo,hi,cold,hot,pen,sunUp:top-eMax,score:cold*1.5+hot+pen+slip+(b.none?0:.1+Math.abs((lo+hi)/2-(eMin+eMax)/2)*.05)}}).sort((a,b)=>a.score-b.score)};
  const c=evaluate(segs),eMin=Math.min(...segs.map(s=>s.eMin)),eMax=Math.max(...segs.map(s=>s.eMax));
