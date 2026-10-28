@@ -135,7 +135,7 @@ function recommend(w){
     // Regen: eine dünne Regendecke (0 g) staut kaum Wärme und passt dann auch bei warmem Wetter
     const hiS=s.wet&&!b.none&&b.waterproof&&I(b)<2?hi+10:hi;
     // Stunde für Stunde: wie weit liegt die gefühlte Temperatur unter bzw. über dem Bereich der Decke?
-    for(const x of s.hrs){const cA=x.A+s.adj+(F-.7)*x.r/100*K,cT=x.T+s.adj+F*x.r/100*K,dc=Math.max(0,lo-cA),dh=Math.max(0,cT-hiS);
+    for(const x of s.hrs){const cA=x.A+s.adj+(F-.7)*x.r/100*K,cT=x.A+s.adj+F*x.r/100*K,dc=Math.max(0,lo-cA),dh=Math.max(0,cT-hiS);
      top=Math.max(top,cT);sc+=dc;sh+=dh;mc=Math.max(mc,dc);mh=Math.max(mh,dh);nh++}
     if(s.wet&&!b.waterproof)pen+=10;if(s.windy&&!b.wind)pen+=1.5;
     if(!single&&(s.box?b.place==='outdoor':b.place==='box'))pen+=2.5}
@@ -298,8 +298,8 @@ function bigChart(from,to){if(!W||!SL.length)return'';
  if(ix.length<2)return'';
  const RG=slotRanges().filter(Boolean),V=ix.map(k=>W.apparent_temperature[k]+locAdj(new Date(W.time[k]))),
   K=+S.sunK,SR=W.shortwave_radiation||[],Fat=t=>{const g=RG.find(x=>t>=x.t.a.getTime()&&t<x.t.b.getTime());return g?g.F:SUNF[S.horse.color||'mid']},
-  // Linie "mit Sonne": Lufttemperatur plus Aufheizung durch die Sonne je nach Farbe der empfohlenen Decke (nur draußen, nur bei Sonne)
-  SV=ix.map(k=>{const d=new Date(W.time[k]),r=SR[k]||0;return K>0&&r>=50&&kindAt(d)!=='box'?W.temperature_2m[k]+locAdj(d)+Fat(d.getTime())*r/100*K:null}),A=[...V,...SV.filter(v=>v!=null)],cl=Math.min(...A),ch=Math.max(...A);
+  // Linie "mit Sonne": Hauptkurve plus Sonneneinstrahlung (W/m², Wetterdaten) × Dunkelheit der empfohlenen Decke bzw. des Fells
+  SV=ix.map((k,i)=>{const d=new Date(W.time[k]),r=SR[k]||0;return K>0&&r>=50&&kindAt(d)!=='box'?V[i]+Fat(d.getTime())*r/100*K:null}),A=[...V,...SV.filter(v=>v!=null)],cl=Math.min(...A),ch=Math.max(...A);
  const lo=Math.min(cl,...RG.map(r=>Math.max(r.lo,cl-6))),hi=Math.max(ch,...RG.map(r=>Math.min(r.hi,ch+6))),sp=Math.max(hi-lo,2);
  const X=t=>10+(Math.min(Math.max(t,t0),t1)-t0)/(t1-t0)*300,Y=v=>8+(hi-Math.min(hi,Math.max(lo,v)))/sp*(PB-14);
  const pts=ix.map((k,i)=>`${X(new Date(W.time[k]).getTime()).toFixed(1)},${Y(V[i]).toFixed(1)}`).join(' ');
