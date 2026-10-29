@@ -236,7 +236,7 @@ function drawToday(){
  const win=ACT>=0?SL[ACT]:null,el=$('#v-today'),w=win?analyse(win.a,win.b):analyse(),m=S.manual;
  const cf=fromBase(),ct=new Date(S.visit),cw={a:cf,b:ct,res:analyse()};
  const vv=new Date(S.visit).getTime(),nw=Date.now(),inp=`<div class="dt1" onclick="event.stopPropagation()"><span>bis</span><button class="s" aria-label="4 Stunden früher" onclick="stepVisit(-4)"${vv-4*36e5<nw+36e5?' disabled':''}>−</button><b>${vlab(S.visit)}</b><button class="s" aria-label="4 Stunden später" onclick="stepVisit(4)"${vv+4*36e5>nw+VMAX?' disabled':''}>+</button></div>`;
- let h=hero()+`<div class="card"><h2>Decke Empfehlung</h2><div class="stk">${tileHTML(-1,null,cw,SHOW&&ACT===-1,'Decke bis zum nächsten Stallbesuch','',1,inp)}${SL.map((t,i)=>tileHTML(i,t,{a:t.a,b:t.b,res:analyse(t.a,t.b)},SHOW&&ACT===i,slotLab(t),'',0,'',slotFor(t)+': ')).join('')}</div></div>`;
+ let h=hero()+`<div class="card"><h2>Decke Empfehlung</h2><div class="stk">${tileHTML(-1,null,cw,SHOW&&ACT===-1,'Zum nächsten Stallbesuch','',1,inp)}${SL.map((t,i)=>tileHTML(i,t,{a:t.a,b:t.b,res:analyse(t.a,t.b)},SHOW&&ACT===i,slotLab(t),'',0,'',slotFor(t)+': ')).join('')}</div></div>`;
  if(err||!W)h+=`<div class="card"><p class="warn">${esc(err)}</p><h2>Wetter manuell</h2><div class="g2">
  <div><label>Tiefste gefühlte °C</label><input type="number" value="${m.minA}" onchange="S.manual.minA=this.value;save();drawToday()"></div>
  <div><label>Höchste °C</label><input type="number" value="${m.maxT}" onchange="S.manual.maxT=this.value;save();drawToday()"></div>
