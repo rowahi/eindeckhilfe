@@ -141,7 +141,8 @@ function recommend(w){
     for(const x of s.hrs){const cA=x.A+s.adj+(F-.7)*x.r/100*K,cT=x.A+s.adj+F*x.r/100*K,dc=Math.max(0,lo-cA),dh=Math.max(0,cT-hiS);
      top=Math.max(top,cT);sc+=dc;sh+=dh;mc=Math.max(mc,dc);mh=Math.max(mh,dh);nh++}
     if(s.wet&&!b.waterproof)pen+=10;if(s.windy&&!b.wind)pen+=1.5;
-    if(!b.none&&!b.neckOn&&s.wet&&s.windy)pen+=.6; // Regen mit Wind: Halsteil hält Hals und Mähne trocken
+    // Regen: ist ein Halsteil vorhanden, aber nicht angezogen, gibt es einen Abzug (mit Wind stärker) – es hält Hals und Mähne trocken
+    if(!b.none&&!b.neckOn&&s.wet){const hn=b.layers===2?(b.over.base||b.over).neck:(b.base||b).neck;if(hn)pen+=s.windy?1.4:.9}
     if(!single&&(s.box?b.place==='outdoor':b.place==='box'))pen+=2.5}
    // Mischform: zählt hauptsächlich, wie lange und wie stark es zu kalt/zu warm ist (Durchschnitt über die Stunden);
    // sehr kalte Stunden (mehr als 4 °C unter dem Bereich) zählen zusätzlich, sehr warme (über 6 °C) etwas
