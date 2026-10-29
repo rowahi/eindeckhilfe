@@ -12,7 +12,7 @@ main{max-width:560px;margin:0 auto;padding:12px}
 .ampel{border-left:10px solid var(--g)}details{margin-top:8px}summary{cursor:pointer;color:var(--mut);padding:8px 0}
 button,input,select{min-height:46px}input[type=checkbox]{min-height:0;width:20px;height:20px;vertical-align:middle}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px;margin-bottom:10px}
-.dt1{margin:6px 0 2px;display:flex;align-items:center;gap:6px}.dt1 span{font-size:.85rem;color:var(--mut);white-space:nowrap}.dt1 input{width:auto;flex:0 1 11.5em;min-width:0;font-size:.85rem;padding:6px 4px}
+.dt1{margin:6px 0 2px;display:flex;align-items:center;gap:8px}.dt1 span{font-size:.85rem;color:var(--mut);white-space:nowrap}.dt1 b{min-width:4.6em;text-align:center}.dt1 button{width:40px;height:36px;padding:0;font-size:1.3rem;line-height:1;flex:0 0 auto}.dt1 button:disabled{opacity:.35}
 .dt{display:grid;grid-template-columns:2.2rem minmax(0,1fr) 6.2rem;gap:6px;align-items:center;margin-top:6px}.dt select,.dt input{min-height:42px;padding:6px 8px;font-size:.9rem;min-width:0}.dt span{font-size:.85rem;color:var(--mut)}.tile.wide{grid-column:1/-1}
 h2{margin:0 0 8px;font-size:1.05rem}label{display:block;font-size:.85rem;color:var(--mut);margin:10px 0 3px}
 input,select,textarea,button{font:inherit;color:var(--tx)}
@@ -58,6 +58,7 @@ S=Object.assign({from:'',sunK:1,vt:'17:30',photo:null,horse:{name:'',sens:0,hous
 S.horse=Object.assign({outT:'07:00',inT:'17:00',boxAdj:1,color:'mid'},S.horse);if(S.horse.house==='paddock')S.horse.house='open';
 migrate();
 if(!S.visit||new Date(S.visit)<new Date())S.visit=nextVisit();
+if(new Date(S.visit).getTime()>Date.now()+72*36e5)S.visit=nextVisit();
 S.from=''; // Von beginnt beim Start immer bei jetzt
 const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
 let W=null,err='',E=null,G=[];
@@ -68,7 +69,7 @@ function tab(n){['today','blk','horse','more'].forEach(x=>{$('#v-'+x).hidden=x!=
 async function load(){
  if(!S.loc){W=null;err='Noch kein Standort gewählt (Reiter „Mehr“).';return drawToday()}
  err='';
- try{const u=`https://api.open-meteo.com/v1/forecast?latitude=${S.loc.lat}&longitude=${S.loc.lon}&hourly=temperature_2m,apparent_temperature,precipitation,precipitation_probability,wind_speed_10m,shortwave_radiation,cloud_cover&forecast_days=3&timezone=auto`;
+ try{const u=`https://api.open-meteo.com/v1/forecast?latitude=${S.loc.lat}&longitude=${S.loc.lon}&hourly=temperature_2m,apparent_temperature,precipitation,precipitation_probability,wind_speed_10m,shortwave_radiation,cloud_cover&forecast_days=4&timezone=auto`;
   const j=await(await fetch(u)).json();if(!j.hourly)throw 0;W=j.hourly}
  catch(e){W=null;err='Wetter nicht abrufbar (Internet?). Du kannst die Werte manuell eingeben.'}
  drawToday()}
@@ -160,11 +161,11 @@ const SHOE='<path d="M3 13V7a5 5 0 0 1 10 0v6h-2.600V7a2.400 2.400 0 0 0-4.800 0
 function shoes(n){const T=['','unsicher','Kompromiss','passt gut'][n];return`<span class="shoes" title="${T}" aria-label="Sicherheit: ${T}">${[1,2,3].map(i=>`<svg viewBox="0 0 16 14" class="${i<=n?'on':''}">${SHOE}</svg>`).join('')}</span>`}
 let SL=[],WHY=false,SHOW=false,ACT=-1; // ACT: -1 = eigener Zeitraum (Von/Bis), sonst Nummer des Halbtags
 const isDayAt=d=>{const o=tmin(S.horse.outT),n=tmin(S.horse.inT),t=d.getHours()*60+d.getMinutes();return o<n?(t>=o&&t<n):(t>=o||t<n)};
-function slots(){const o=tmin(S.horse.outT),n=tmin(S.horse.inT),B=[];
- for(let k=-1;k<=3;k++)[[o,1],[n,0]].forEach(([t,day])=>{const d=new Date();d.setDate(d.getDate()+k);d.setHours(Math.floor(t/60),t%60,0,0);B.push({d,day})});
+function slots(N){N=N||3;const o=tmin(S.horse.outT),n=tmin(S.horse.inT),B=[];
+ for(let k=-1;k<=4;k++)[[o,1],[n,0]].forEach(([t,day])=>{const d=new Date();d.setDate(d.getDate()+k);d.setHours(Math.floor(t/60),t%60,0,0);B.push({d,day})});
  B.sort((x,y)=>x.d-y.d);const now=new Date();let i=0;B.forEach((x,k)=>{if(x.d<=now)i=k});
  const out=[];if(B[i+1]&&B[i+1].d-now>=45*6e4)out.push({a:now,b:B[i+1].d,day:B[i].day,first:1});
- for(let k=i+1;k<B.length-1&&out.length<3;k++)out.push({a:B[k].d,b:B[k+1].d,day:B[k].day});return out}
+ for(let k=i+1;k<B.length-1&&out.length<N;k++)out.push({a:B[k].d,b:B[k+1].d,day:B[k].day});return out}
 const wd=d=>new Date(d).toLocaleDateString('de-DE',{weekday:'long'});
 const slotLab=t=>(t.first||dayWord(t.a)==='heute'?'Heute':wd(t.a))+(t.day?' am Tag':' in der Nacht');
 const slotFor=t=>t.first&&!t.day?'Diese Nacht':slotLab(t);
@@ -234,7 +235,7 @@ function drawToday(){
  SL=W?slots():[];if(ACT>=SL.length)ACT=-1;
  const win=ACT>=0?SL[ACT]:null,el=$('#v-today'),w=win?analyse(win.a,win.b):analyse(),m=S.manual;
  const cf=fromBase(),ct=new Date(S.visit),cw={a:cf,b:ct,res:analyse()};
- const inp=`<div class="dt1" onclick="event.stopPropagation()"><span>von jetzt bis</span><input type="datetime-local" value="${S.visit}" onchange="setVisit(this.value)"></div>`;
+ const vv=new Date(S.visit).getTime(),nw=Date.now(),inp=`<div class="dt1" onclick="event.stopPropagation()"><span>bis</span><button class="s" aria-label="4 Stunden früher" onclick="stepVisit(-4)"${vv-4*36e5<nw+36e5?' disabled':''}>−</button><b>${vlab(S.visit)}</b><button class="s" aria-label="4 Stunden später" onclick="stepVisit(4)"${vv+4*36e5>nw+VMAX?' disabled':''}>+</button></div>`;
  let h=hero()+`<div class="card"><h2>Decke Empfehlung</h2><div class="stk">${tileHTML(-1,null,cw,SHOW&&ACT===-1,'Decke bis zum nächsten Stallbesuch','',1,inp)}${SL.map((t,i)=>tileHTML(i,t,{a:t.a,b:t.b,res:analyse(t.a,t.b)},SHOW&&ACT===i,slotLab(t),'',0,'',slotFor(t)+': ')).join('')}</div></div>`;
  if(err||!W)h+=`<div class="card"><p class="warn">${esc(err)}</p><h2>Wetter manuell</h2><div class="g2">
  <div><label>Tiefste gefühlte °C</label><input type="number" value="${m.minA}" onchange="S.manual.minA=this.value;save();drawToday()"></div>
@@ -290,13 +291,13 @@ function dayLbl(t0,t1,X){let o='';const d=new Date(t0);d.setHours(0,0,0,0);
 // Ortszuschlag: Box wärmer, draußen ohne Unterstand kälter. Er wird auf die Temperaturlinie gerechnet,
 // damit jede Decke im Verlauf immer denselben Bereich hat (wie in der Deckenliste).
 const locAdj=d=>{const h=S.horse;return kindAt(d)==='box'?+(h.boxAdj??1):(h.shelter?0:-2)};
-function slotRanges(){return SL.map(t=>{const w=analyse(t.a,t.b);if(w.err)return null;const q=recommend(w).best,b=q.b,c=b.none?'#8a8f98':bcol(b.layers===2?b.over:b);
+function slotRanges(L){return L.map(t=>{const w=analyse(t.a,t.b);if(w.err)return null;const q=recommend(w).best,b=q.b,c=b.none?'#8a8f98':bcol(b.layers===2?b.over:b);
  return{t,lo:q.lo-sens(),hi:q.hi-sens(),c,none:!!b.none,F:SUNF[(b.none?S.horse.color:b.color)||'mid']}})}
 function bigChart(from,to){if(!W||!SL.length)return'';
- const t0=SL[0].a.getTime(),t1=SL[SL.length-1].b.getTime(),ix=[];
+ const lastW=new Date(W.time[W.time.length-1]).getTime(),t0=SL[0].a.getTime(),t1=Math.min(lastW,Math.max(SL[SL.length-1].b.getTime(),new Date(S.visit).getTime()+2*36e5)),ix=[];
  W.time.forEach((t,k)=>{const d=new Date(t).getTime();if(d>=t0-36e5&&d<=t1)ix.push(k)});
  if(ix.length<2)return'';
- const RG=slotRanges().filter(Boolean),V=ix.map(k=>W.apparent_temperature[k]+locAdj(new Date(W.time[k]))),
+ const SLC=slots(10).filter(t=>t.a.getTime()<t1).map(t=>({...t,b:new Date(Math.min(t.b.getTime(),t1))})),RG=slotRanges(SLC).filter(Boolean),V=ix.map(k=>W.apparent_temperature[k]+locAdj(new Date(W.time[k]))),
   K=+S.sunK,SR=W.shortwave_radiation||[],Fat=t=>{const g=RG.find(x=>t>=x.t.a.getTime()&&t<x.t.b.getTime());return g?g.F:SUNF[S.horse.color||'mid']},
   // Linie "mit Sonne": Hauptkurve plus Sonneneinstrahlung (W/m², Wetterdaten) × Dunkelheit der empfohlenen Decke bzw. des Fells
   SV=ix.map((k,i)=>{const d=new Date(W.time[k]),r=SR[k]||0;return K>0&&r>=50&&kindAt(d)!=='box'?V[i]+Fat(d.getTime())*r/100*K:null}),A=[...V,...SV.filter(v=>v!=null)],cl=Math.min(...A),ch=Math.max(...A);
@@ -305,19 +306,25 @@ function bigChart(from,to){if(!W||!SL.length)return'';
  const pts=ix.map((k,i)=>`${X(new Date(W.time[k]).getTime()).toFixed(1)},${Y(V[i]).toFixed(1)}`).join(' ');
  let sun='',run=[];const flush=()=>{if(run.length>1)sun+=`<polyline points="${run.join(' ')}" fill="none" stroke="#e8902c" stroke-width="1.6" stroke-dasharray="3 2" stroke-linejoin="round"/>`;else if(run.length===1)sun+=`<circle cx="${run[0].split(',')[0]}" cy="${run[0].split(',')[1]}" r="1.6" fill="#e8902c"/>`;run=[]};
  ix.forEach((k,i)=>{if(SV[i]==null)return flush();run.push(`${X(new Date(W.time[k]).getTime()).toFixed(1)},${Y(SV[i]).toFixed(1)}`)});flush();
- const night=SL.map(t=>`<rect x="${X(t.a.getTime()).toFixed(1)}" y="2" width="${(X(t.b.getTime())-X(t.a.getTime())).toFixed(1)}" height="${PB-2}" fill="${t.day?'#ffd54a':'#1f3a8a'}" opacity="${t.day?'.14':'.38'}"/>`).join('');
- const sep=SL.slice(1).map(t=>`<line x1="${X(t.a.getTime()).toFixed(1)}" x2="${X(t.a.getTime()).toFixed(1)}" y1="2" y2="${PB}" stroke="var(--bd)"/>`).join('');
+ const night=SLC.map(t=>`<rect x="${X(t.a.getTime()).toFixed(1)}" y="2" width="${(X(t.b.getTime())-X(t.a.getTime())).toFixed(1)}" height="${PB-2}" fill="${t.day?'#ffd54a':'#1f3a8a'}" opacity="${t.day?'.14':'.38'}"/>`).join('');
+ const sep=SLC.slice(1).map(t=>`<line x1="${X(t.a.getTime()).toFixed(1)}" x2="${X(t.a.getTime()).toFixed(1)}" y1="2" y2="${PB}" stroke="var(--bd)"/>`).join('');
  const box=RG.map(r=>{const x1=X(r.t.a.getTime())+2,x2=X(r.t.b.getTime())-2,y1=Y(r.hi),y2=Y(r.lo);if(x2-x1<3)return'';
   return`<rect x="${x1.toFixed(1)}" y="${y1.toFixed(1)}" width="${(x2-x1).toFixed(1)}" height="${Math.max(2,y2-y1).toFixed(1)}" rx="3" fill="${r.c}" fill-opacity="${r.none?.08:.22}" stroke="${r.c}" stroke-opacity=".85" stroke-width="1.3"${r.none?' stroke-dasharray="3 2"':''}/>`}).join('');
  const rain=ix.map(k=>{const r=W.precipitation[k]||0;if(r<=0)return'';const x=X(new Date(W.time[k]).getTime()),hh=Math.min(14,2+r*5);return`<rect x="${(x-1.2).toFixed(1)}" y="${(PB-hh).toFixed(1)}" width="2.4" height="${hh.toFixed(1)}" fill="#4a90d9" opacity=".75"/>`}).join('');
  const fx=X(from.getTime()),tx=X(to.getTime());
  const sel=(SHOW&&ACT>=0)?`<rect x="${fx.toFixed(1)}" y="2" width="${Math.max(2,tx-fx).toFixed(1)}" height="${PB-2}" fill="none" stroke="var(--ac)" stroke-width="2" rx="3"/>`:'';
- const vt=new Date(S.visit).getTime(),vx=X(vt),mk=(vt>=t0&&vt<=t1)?`<line x1="${vx.toFixed(1)}" x2="${vx.toFixed(1)}" y1="4" y2="${PB+2}" stroke="#d9483b" stroke-width="2" stroke-dasharray="4 2"/><polygon points="${(vx-5).toFixed(1)},0 ${(vx+5).toFixed(1)},0 ${vx.toFixed(1)},7" fill="#d9483b"/><text x="${vx>240?(vx-4).toFixed(1):(vx+4).toFixed(1)}" y="20" font-size="9" font-weight="700" text-anchor="${vx>240?'end':'start'}" fill="#d9483b">Stallbesuch</text>`:'';
+ const vt=new Date(S.visit).getTime(),vx=X(vt),bx=X(t0),y1=3,y2=PB-1,RC='#d9483b',
+  mk=`<path d="M${(bx+6).toFixed(1)} ${y1}H${bx.toFixed(1)}V${y2}H${(bx+6).toFixed(1)}" fill="none" stroke="${RC}" stroke-width="2.200"/>`+((vt>=t0&&vt<=t1)?`<path d="M${(vx-6).toFixed(1)} ${y1}H${vx.toFixed(1)}V${y2}H${(vx-6).toFixed(1)}" fill="none" stroke="${RC}" stroke-width="2.200"/><text x="${vx>240?(vx-9).toFixed(1):(vx+4).toFixed(1)}" y="14" font-size="9" font-weight="700" text-anchor="${vx>240?'end':'start'}" fill="${RC}">Stallbesuch</text>`:'');
  return`<svg viewBox="0 0 320 ${PB+20}" style="width:100%">${night}${sep}${box}${sel}${rain}<polyline points="${pts}" fill="none" stroke="var(--ac)" stroke-width="2.4" stroke-linejoin="round"/>${sun}
  <text x="2" y="12" font-size="9" fill="var(--mut)">${r0(hi)}°</text><text x="2" y="${PB-4}" font-size="9" fill="var(--mut)">${r0(lo)}°</text>
  ${mk}${dayLbl(t0,t1,X)}</svg>
- <p class="mut" style="margin:2px 0 0">Linie: gefühlte Temperatur am Platz des Pferdes (${S.horse.house==='open'?'':'Box '+sl(+(S.horse.boxAdj??1))+' °C, '}draußen ${S.horse.shelter?'±0':'−2'} °C)${sun?' · orange gestrichelt: mit Sonne (je nach Farbe der Decke)':''} · Kästchen: Bereich der empfohlenen Decke, gleich wie in der Deckenliste · blau: Regen · dunkelblau: Nacht · rot: Stallbesuch</p>`}
+ <p class="mut" style="margin:2px 0 0">Linie: gefühlte Temperatur am Platz des Pferdes (${S.horse.house==='open'?'':'Box '+sl(+(S.horse.boxAdj??1))+' °C, '}draußen ${S.horse.shelter?'±0':'−2'} °C)${sun?' · orange gestrichelt: mit Sonne (je nach Farbe der Decke)':''} · Kästchen: Bereich der empfohlenen Decke, gleich wie in der Deckenliste · blau: Regen · dunkelblau: Nacht · rot [ ]: jetzt bis Stallbesuch</p>`}
 
+// Nächster Stallbesuch: höchstens 3 × 24 h ab jetzt, Einstellung in 4-h-Schritten
+const VMAX=72*36e5;
+const vlab=v=>{const d=new Date(v),m=d.getMinutes();return d.toLocaleDateString('de-DE',{weekday:'short'}).replace('.','')+' '+d.getHours()+(m?':'+String(m).padStart(2,'0'):'')+'h'};
+function clampVisit(){const n=Date.now(),v=new Date(S.visit).getTime();if(!(v>n+36e5)||v>n+VMAX){const d=new Date(nextVisit());S.visit=loc16(new Date(Math.min(Math.max(d.getTime(),n+36e5),n+VMAX)))}}
+function stepVisit(h){const n=Date.now(),v=new Date(S.visit).getTime()+h*36e5;if(v<n+36e5||v>n+VMAX)return;S.visit=loc16(new Date(v));S.vt=S.visit.slice(11,16);ACT=-1;SHOW=true;WHY=false;save();drawToday()}
 function setVisit(v){if(v){S.visit=v;S.vt=v.slice(11,16);ACT=-1;SHOW=true;WHY=false;save();drawToday()}}
 function inH(n){S.visit=loc16(new Date(fromBase().getTime()+n*36e5));save();drawToday()}
 
