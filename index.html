@@ -19,6 +19,7 @@ input,select,textarea,button{font:inherit;color:var(--tx)}
 input,select,textarea{width:100%;padding:9px;border:1px solid var(--bd);border-radius:9px;background:var(--bg)}
 input[type=checkbox]{width:auto;margin-right:6px}
 button{background:var(--ac);color:var(--on);border:0;border-radius:9px;padding:9px 14px;cursor:pointer}
+a.btn{display:flex;align-items:center;justify-content:center;min-height:46px;background:var(--ac);color:var(--on);border-radius:9px;padding:9px 14px;text-decoration:none;flex:1}
 button.s{background:var(--ac2);color:var(--tx)}button.d{background:var(--warn);color:#fff}
 .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.row>*{flex:1}.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .big{font-size:1.6rem;font-weight:700;margin:2px 0}.mut{color:var(--mut);font-size:.9rem}
@@ -60,6 +61,7 @@ migrate();
 if(!S.visit||new Date(S.visit)<new Date())S.visit=nextVisit();
 if(new Date(S.visit).getTime()>Date.now()+72*36e5)S.visit=nextVisit();
 S.from=''; // Von beginnt beim Start immer bei jetzt
+const APPV='51';
 const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
 let W=null,err='',E=null,G=[];
 
@@ -417,7 +419,9 @@ function drawM(){$('#v-more').innerHTML=`<div class="card"><h2>Standort</h2><p c
  <div class="row"><button class="s" onclick="shareCSV()">Beide teilen</button><button onclick="$('#csvf').click()">CSV importieren</button></div>
  <input id="csvf" type="file" accept=".csv,text/csv,text/plain,text/comma-separated-values" multiple hidden onchange="impCSV(this)"><p id="csvmsg" class="mut"></p></div>
 
- <p class="mut">Wetterdaten: Open-Meteo.com. Alle Daten bleiben auf deinem Gerät. Die Empfehlung ist eine Entscheidungshilfe, prüfe dein Pferd immer selbst (Nacken und Flanke fühlen).</p>`}
+ <div class="card"><h2>Feedback</h2><p class="mut">Ein Wunsch, eine Idee oder ein Fehler? Wir freuen uns über deine Nachricht.</p>
+ <div class="row"><a class="btn" href="https://tally.so/r/xVVA05?version=${APPV}" target="_blank" rel="noopener">Feedback oder Wunsch senden</a></div></div>
+ <p class="mut">Version ${APPV} · Wetterdaten: Open-Meteo.com. Alle Daten bleiben auf deinem Gerät. Die Empfehlung ist eine Entscheidungshilfe, prüfe dein Pferd immer selbst (Nacken und Flanke fühlen).</p>`}
 function gps(){navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>{S.loc={lat:p.coords.latitude,lon:p.coords.longitude,name:'GPS-Standort'};save();drawM();load()},()=>alert('Standort nicht verfügbar. Bitte Ort suchen.')):alert('Kein GPS verfügbar.')}
 async function srch(){const q=$('#q').value.trim();if(!q)return;
  try{const j=await(await fetch('https://geocoding-api.open-meteo.com/v1/search?count=5&language=de&name='+encodeURIComponent(q))).json();G=j.results||[];
