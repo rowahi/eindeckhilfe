@@ -24,7 +24,7 @@ button.s{background:var(--ac2);color:var(--tx)}button.d{background:var(--warn);c
 .big{font-size:1.6rem;font-weight:700;margin:2px 0}.mut{color:var(--mut);font-size:.9rem}
 .tag{display:inline-block;background:var(--ac2);border-radius:20px;padding:2px 10px;font-size:.8rem;margin:2px 4px 2px 0}
 .warn{color:var(--warn)}ul{padding-left:18px;margin:6px 0}
-.tile{border:1px solid var(--bd);border-radius:12px;padding:8px 10px;background:var(--bg);cursor:pointer;min-width:0}.trow{display:flex;align-items:center;gap:8px}.trow .tx{flex:1;min-width:0}.hs{flex:0 0 72px;width:72px;height:50px}.hz{display:flex;flex-direction:column;align-items:center;flex:0 0 72px}.shoes{display:inline-flex;gap:2px;flex:0 0 auto}.shoes svg{width:13px;height:12px;fill:var(--bd)}.shoes svg.on{fill:#b8862b}.tile .tb.nm{white-space:normal;overflow:visible;font-size:.95rem}.stk{display:grid;grid-template-columns:1fr;gap:8px}.tile.on{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac) inset}
+.tile{border:1px solid var(--bd);border-radius:12px;padding:8px 10px;background:var(--bg);cursor:pointer;min-width:0}.trow{display:flex;align-items:center;gap:8px}.trow .tx{flex:1;min-width:0}.hs{flex:0 0 72px;width:72px;height:50px}.hz{display:flex;flex-direction:column;align-items:center;flex:0 0 72px}.shoes{display:inline-flex;gap:2px;flex:0 0 auto}.shoes svg{width:13px;height:12px;fill:var(--bd)}.shoes svg.on{fill:#b8862b}.tile .tb.nm{white-space:normal;overflow:visible;font-size:.95rem}.gsc{overflow-x:auto;-webkit-overflow-scrolling:touch}.stk{display:grid;grid-template-columns:1fr;gap:8px}.tile.on{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac) inset}
 .tile b{font-size:.9rem}.tile .tl{display:flex;align-items:center;gap:6px}.tile .ic{font-size:1.3rem;margin-right:6px}.tile .tb{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:.85rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.tile .tb i{flex:0 0 10px;height:10px;border-radius:50%}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chips button{flex:0 1 auto;min-height:38px;padding:6px 10px;font-size:.85rem}
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom)}
@@ -236,7 +236,7 @@ function drawToday(){
  const win=ACT>=0?SL[ACT]:null,el=$('#v-today'),w=win?analyse(win.a,win.b):analyse(),m=S.manual;
  const cf=fromBase(),ct=new Date(S.visit),cw={a:cf,b:ct,res:analyse()};
  const vv=new Date(S.visit).getTime(),nw=Date.now(),inp=`<div class="dt1" onclick="event.stopPropagation()"><span>bis</span><button class="s" aria-label="4 Stunden früher" onclick="stepVisit(-4)"${vv-4*36e5<nw+36e5?' disabled':''}>−</button><b>${vlab(S.visit)}</b><button class="s" aria-label="4 Stunden später" onclick="stepVisit(4)"${vv+4*36e5>nw+VMAX?' disabled':''}>+</button></div>`;
- let h=hero()+`<div class="card"><h2>Decke Empfehlung</h2><div class="stk">${tileHTML(-1,null,cw,SHOW&&ACT===-1,'Zum nächsten Stallbesuch','',1,inp)}${SL.map((t,i)=>tileHTML(i,t,{a:t.a,b:t.b,res:analyse(t.a,t.b)},SHOW&&ACT===i,slotLab(t),'',0,'',slotFor(t)+': ')).join('')}</div></div>`;
+ let h=hero()+`<div class="card"><h2>Decke Empfehlung</h2><div class="stk">${tileHTML(-1,null,cw,SHOW&&ACT===-1,'Bis zum nächsten Stallbesuch','',1,inp)}${SL.map((t,i)=>tileHTML(i,t,{a:t.a,b:t.b,res:analyse(t.a,t.b)},SHOW&&ACT===i,slotLab(t),'',0,'',slotFor(t)+': ')).join('')}</div></div>`;
  if(err||!W)h+=`<div class="card"><p class="warn">${esc(err)}</p><h2>Wetter manuell</h2><div class="g2">
  <div><label>Tiefste gefühlte °C</label><input type="number" value="${m.minA}" onchange="S.manual.minA=this.value;save();drawToday()"></div>
  <div><label>Höchste °C</label><input type="number" value="${m.maxT}" onchange="S.manual.maxT=this.value;save();drawToday()"></div>
@@ -302,7 +302,9 @@ function bigChart(from,to){if(!W||!SL.length)return'';
   // Linie "mit Sonne": Hauptkurve plus Sonneneinstrahlung (W/m², Wetterdaten) × Dunkelheit der empfohlenen Decke bzw. des Fells
   SV=ix.map((k,i)=>{const d=new Date(W.time[k]),r=SR[k]||0;return K>0&&r>=50&&kindAt(d)!=='box'?V[i]+Fat(d.getTime())*r/100*K:null}),A=[...V,...SV.filter(v=>v!=null)],cl=Math.min(...A),ch=Math.max(...A);
  const VR0=(()=>{const w=analyse();if(w.err)return[];const q=recommend(w).best;return[{lo:q.lo-sens(),hi:q.hi-sens()}]})(),RA=[...RG,...VR0],lo=Math.min(cl,...RA.map(r=>Math.max(r.lo,cl-6))),hi=Math.max(ch,...RA.map(r=>Math.min(r.hi,ch+6))),sp=Math.max(hi-lo,2);
- const X=t=>10+(Math.min(Math.max(t,t0),t1)-t0)/(t1-t0)*300,Y=v=>8+(hi-Math.min(hi,Math.max(lo,v)))/sp*(PB-14);
+ // Gleicher Maßstab wie für die Halbtage: reicht der Stallbesuch weiter, wird die Grafik breiter (seitlich scrollbar)
+ const base=Math.max(36e5,SL[SL.length-1].b.getTime()-t0),GW=Math.max(300,300*(t1-t0)/base),VWD=GW+20;
+ const X=t=>10+(Math.min(Math.max(t,t0),t1)-t0)/(t1-t0)*GW,Y=v=>8+(hi-Math.min(hi,Math.max(lo,v)))/sp*(PB-14);
  const pts=ix.map((k,i)=>`${X(new Date(W.time[k]).getTime()).toFixed(1)},${Y(V[i]).toFixed(1)}`).join(' ');
  let sun='',run=[];const flush=()=>{if(run.length>1)sun+=`<polyline points="${run.join(' ')}" fill="none" stroke="#e8902c" stroke-width="1.6" stroke-dasharray="3 2" stroke-linejoin="round"/>`;else if(run.length===1)sun+=`<circle cx="${run[0].split(',')[0]}" cy="${run[0].split(',')[1]}" r="1.6" fill="#e8902c"/>`;run=[]};
  ix.forEach((k,i)=>{if(SV[i]==null)return flush();run.push(`${X(new Date(W.time[k]).getTime()).toFixed(1)},${Y(SV[i]).toFixed(1)}`)});flush();
@@ -316,10 +318,10 @@ function bigChart(from,to){if(!W||!SL.length)return'';
  // Klammern [ ]: Zeitraum jetzt bis Stallbesuch, Höhe = Bereich der dafür empfohlenen Decke, Farbe = Deckenfarbe
  const VW=analyse(),VQ=VW.err?null:recommend(VW).best,VB=VQ&&VQ.b;
  const vt=new Date(S.visit).getTime(),vx=X(vt),bx=X(t0),y1=VQ?Y(VQ.hi-sens()):3,y2=VQ?Y(VQ.lo-sens()):PB-1,RC=VB?(VB.none?'#6b7570':bcol(VB.layers===2?VB.over:VB)):'#d9483b',
-  mk=`<path d="M${(bx+6).toFixed(1)} ${y1}H${bx.toFixed(1)}V${y2}H${(bx+6).toFixed(1)}" fill="none" stroke="${RC}" stroke-width="2.200"/>`+((vt>=t0&&vt<=t1)?`<path d="M${(vx-6).toFixed(1)} ${y1}H${vx.toFixed(1)}V${y2}H${(vx-6).toFixed(1)}" fill="none" stroke="${RC}" stroke-width="2.200"/><text x="${vx>240?(vx-9).toFixed(1):(vx+4).toFixed(1)}" y="14" font-size="9" font-weight="700" text-anchor="${vx>240?'end':'start'}" fill="${RC}">Stallbesuch</text>`:'');
- return`<svg viewBox="0 0 320 ${PB+20}" style="width:100%">${night}${sep}${box}${sel}${rain}<polyline points="${pts}" fill="none" stroke="var(--ac)" stroke-width="2.4" stroke-linejoin="round"/>${sun}
+  mk=`<path d="M${(bx+6).toFixed(1)} ${y1}H${bx.toFixed(1)}V${y2}H${(bx+6).toFixed(1)}" fill="none" stroke="${RC}" stroke-width="2.200"/>`+((vt>=t0&&vt<=t1)?`<path d="M${(vx-6).toFixed(1)} ${y1}H${vx.toFixed(1)}V${y2}H${(vx-6).toFixed(1)}" fill="none" stroke="${RC}" stroke-width="2.200"/><text x="${vx>VWD-80?(vx-9).toFixed(1):(vx+4).toFixed(1)}" y="14" font-size="9" font-weight="700" text-anchor="${vx>VWD-80?'end':'start'}" fill="${RC}">Stallbesuch</text>`:'');
+ return`<div class="gsc"><svg viewBox="0 0 ${VWD.toFixed(0)} ${PB+20}" style="width:${(VWD/320*100).toFixed(1)}%;display:block">${night}${sep}${box}${sel}${rain}<polyline points="${pts}" fill="none" stroke="var(--ac)" stroke-width="2.4" stroke-linejoin="round"/>${sun}
  <text x="2" y="12" font-size="9" fill="var(--mut)">${r0(hi)}°</text><text x="2" y="${PB-4}" font-size="9" fill="var(--mut)">${r0(lo)}°</text>
- ${mk}${dayLbl(t0,t1,X)}</svg>
+ ${mk}${dayLbl(t0,t1,X)}</svg></div>${GW>301?'<p class="mut" style="margin:2px 0 0">↔ seitlich wischen für den ganzen Zeitraum</p>':''}
  <p class="mut" style="margin:2px 0 0">Linie: gefühlte Temperatur am Platz des Pferdes (${S.horse.house==='open'?'':'Box '+sl(+(S.horse.boxAdj??1))+' °C, '}draußen ${S.horse.shelter?'±0':'−2'} °C)${sun?' · orange gestrichelt: mit Sonne (je nach Farbe der Decke)':''} · Kästchen: Bereich der empfohlenen Decke, gleich wie in der Deckenliste · blau: Regen · dunkelblau: Nacht · Klammern [ ]: jetzt bis Stallbesuch, Höhe und Farbe der dafür empfohlenen Decke</p>`}
 
 // Nächster Stallbesuch: höchstens 3 × 24 h ab jetzt, Einstellung in 4-h-Schritten
