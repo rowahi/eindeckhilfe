@@ -69,7 +69,7 @@ function tab(n){['today','blk','horse','more'].forEach(x=>{$('#v-'+x).hidden=x!=
 async function load(){
  if(!S.loc){W=null;err='Noch kein Standort gewählt (Reiter „Mehr“).';return drawToday()}
  err='';
- try{const u=`https://api.open-meteo.com/v1/forecast?latitude=${S.loc.lat}&longitude=${S.loc.lon}&hourly=temperature_2m,apparent_temperature,precipitation,precipitation_probability,wind_speed_10m,shortwave_radiation,cloud_cover&forecast_days=4&timezone=auto`;
+ try{const u=`https://api.open-meteo.com/v1/forecast?latitude=${S.loc.lat}&longitude=${S.loc.lon}&hourly=temperature_2m,apparent_temperature,precipitation,precipitation_probability,wind_speed_10m,shortwave_radiation,cloud_cover&forecast_days=5&timezone=auto`;
   const j=await(await fetch(u)).json();if(!j.hourly)throw 0;W=j.hourly}
  catch(e){W=null;err='Wetter nicht abrufbar (Internet?). Du kannst die Werte manuell eingeben.'}
  drawToday()}
@@ -166,7 +166,7 @@ function shoes(n){const T=['','unsicher','Kompromiss','passt gut'][n];return`<sp
 let SL=[],WHY=false,SHOW=false,ACT=-1; // ACT: -1 = eigener Zeitraum (Von/Bis), sonst Nummer des Halbtags
 const isDayAt=d=>{const o=tmin(S.horse.outT),n=tmin(S.horse.inT),t=d.getHours()*60+d.getMinutes();return o<n?(t>=o&&t<n):(t>=o||t<n)};
 function slots(N){N=N||3;const o=tmin(S.horse.outT),n=tmin(S.horse.inT),B=[];
- for(let k=-1;k<=4;k++)[[o,1],[n,0]].forEach(([t,day])=>{const d=new Date();d.setDate(d.getDate()+k);d.setHours(Math.floor(t/60),t%60,0,0);B.push({d,day})});
+ for(let k=-1;k<=5;k++)[[o,1],[n,0]].forEach(([t,day])=>{const d=new Date();d.setDate(d.getDate()+k);d.setHours(Math.floor(t/60),t%60,0,0);B.push({d,day})});
  B.sort((x,y)=>x.d-y.d);const now=new Date();let i=0;B.forEach((x,k)=>{if(x.d<=now)i=k});
  const out=[];if(B[i+1]&&B[i+1].d-now>=45*6e4)out.push({a:now,b:B[i+1].d,day:B[i].day,first:1});
  for(let k=i+1;k<B.length-1&&out.length<N;k++)out.push({a:B[k].d,b:B[k+1].d,day:B[k].day});return out}
@@ -236,7 +236,7 @@ function setWin(i){const was=(ACT===i&&SHOW);ACT=i;WHY=false;SHOW=!was;drawToday
 function toggleWhy(){WHY=!WHY;drawToday()}
 const fdt=d=>new Date(d).toLocaleString('de-DE',{weekday:'long',hour:'2-digit',minute:'2-digit'});
 function drawToday(){
- SL=W?slots():[];if(ACT>=SL.length)ACT=-1;
+ SL=W?slots(Math.min(8,Math.max(2,+S.nSlots||3))):[];if(ACT>=SL.length)ACT=-1;
  const win=ACT>=0?SL[ACT]:null,el=$('#v-today'),w=win?analyse(win.a,win.b):analyse(),m=S.manual;
  const cf=fromBase(),ct=new Date(S.visit),cw={a:cf,b:ct,res:analyse()};
  const vv=new Date(S.visit).getTime(),nw=Date.now(),inp=`<div class="dt1" onclick="event.stopPropagation()"><span>bis</span><button class="s" aria-label="4 Stunden früher" onclick="stepVisit(-4)"${vv-4*36e5<nw+36e5?' disabled':''}>−</button><b>${vlab(S.visit)}</b><button class="s" aria-label="4 Stunden später" onclick="stepVisit(4)"${vv+4*36e5>nw+VMAX?' disabled':''}>+</button></div>`;
@@ -404,6 +404,8 @@ function drawM(){$('#v-more').innerHTML=`<div class="card"><h2>Standort</h2><p c
  <label>Oder Ort suchen</label><div class="row"><input id="q" placeholder="z. B. Hamburg"><button class="s" style="flex:0" onclick="srch()">Suchen</button></div><div id="res"></div></div>
  <div class="card"><h2>Sonneneinfluss</h2><p class="mut">Wie stark die Sonne Pferd und Decke aufwärmt. Bei Pferd und Decke legst du die Farbe fest.</p>
  <select onchange="S.sunK=+this.value;save();drawM()">${[[0,'aus'],[.5,'schwach'],[1,'normal'],[1.5,'stark']].map(x=>`<option value="${x[0]}"${+S.sunK===x[0]?' selected':''}>${x[1]}</option>`).join('')}</select></div>
+ <div class="card"><h2>Anzeige</h2><label>Anzahl Halbtage auf der Startseite</label>
+ <select onchange="S.nSlots=+this.value;save()">${[2,3,4,5,6,7,8].map(n=>`<option value="${n}"${(+S.nSlots||3)===n?' selected':''}>${n}</option>`).join('')}</select></div>
  <div class="card"><h2>Sicherung als Text</h2><p class="mut">Pferd und Decken als Text exportieren oder auf einem anderen Handy importieren.</p>
  <textarea id="bk" rows="4" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
  <div class="row"><button class="s" onclick="expo()">Code erzeugen</button><button class="s" onclick="shareCode()">Teilen (z. B. Threema)</button></div>
