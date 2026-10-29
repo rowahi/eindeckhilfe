@@ -301,7 +301,7 @@ function bigChart(from,to){if(!W||!SL.length)return'';
   K=+S.sunK,SR=W.shortwave_radiation||[],Fat=t=>{const g=RG.find(x=>t>=x.t.a.getTime()&&t<x.t.b.getTime());return g?g.F:SUNF[S.horse.color||'mid']},
   // Linie "mit Sonne": Hauptkurve plus Sonneneinstrahlung (W/m², Wetterdaten) × Dunkelheit der empfohlenen Decke bzw. des Fells
   SV=ix.map((k,i)=>{const d=new Date(W.time[k]),r=SR[k]||0;return K>0&&r>=50&&kindAt(d)!=='box'?V[i]+Fat(d.getTime())*r/100*K:null}),A=[...V,...SV.filter(v=>v!=null)],cl=Math.min(...A),ch=Math.max(...A);
- const lo=Math.min(cl,...RG.map(r=>Math.max(r.lo,cl-6))),hi=Math.max(ch,...RG.map(r=>Math.min(r.hi,ch+6))),sp=Math.max(hi-lo,2);
+ const VR0=(()=>{const w=analyse();if(w.err)return[];const q=recommend(w).best;return[{lo:q.lo-sens(),hi:q.hi-sens()}]})(),RA=[...RG,...VR0],lo=Math.min(cl,...RA.map(r=>Math.max(r.lo,cl-6))),hi=Math.max(ch,...RA.map(r=>Math.min(r.hi,ch+6))),sp=Math.max(hi-lo,2);
  const X=t=>10+(Math.min(Math.max(t,t0),t1)-t0)/(t1-t0)*300,Y=v=>8+(hi-Math.min(hi,Math.max(lo,v)))/sp*(PB-14);
  const pts=ix.map((k,i)=>`${X(new Date(W.time[k]).getTime()).toFixed(1)},${Y(V[i]).toFixed(1)}`).join(' ');
  let sun='',run=[];const flush=()=>{if(run.length>1)sun+=`<polyline points="${run.join(' ')}" fill="none" stroke="#e8902c" stroke-width="1.6" stroke-dasharray="3 2" stroke-linejoin="round"/>`;else if(run.length===1)sun+=`<circle cx="${run[0].split(',')[0]}" cy="${run[0].split(',')[1]}" r="1.6" fill="#e8902c"/>`;run=[]};
@@ -313,12 +313,14 @@ function bigChart(from,to){if(!W||!SL.length)return'';
  const rain=ix.map(k=>{const r=W.precipitation[k]||0;if(r<=0)return'';const x=X(new Date(W.time[k]).getTime()),hh=Math.min(14,2+r*5);return`<rect x="${(x-1.2).toFixed(1)}" y="${(PB-hh).toFixed(1)}" width="2.4" height="${hh.toFixed(1)}" fill="#4a90d9" opacity=".75"/>`}).join('');
  const fx=X(from.getTime()),tx=X(to.getTime());
  const sel=(SHOW&&ACT>=0)?`<rect x="${fx.toFixed(1)}" y="2" width="${Math.max(2,tx-fx).toFixed(1)}" height="${PB-2}" fill="none" stroke="var(--ac)" stroke-width="2" rx="3"/>`:'';
- const vt=new Date(S.visit).getTime(),vx=X(vt),bx=X(t0),y1=3,y2=PB-1,RC='#d9483b',
+ // Klammern [ ]: Zeitraum jetzt bis Stallbesuch, Höhe = Bereich der dafür empfohlenen Decke, Farbe = Deckenfarbe
+ const VW=analyse(),VQ=VW.err?null:recommend(VW).best,VB=VQ&&VQ.b;
+ const vt=new Date(S.visit).getTime(),vx=X(vt),bx=X(t0),y1=VQ?Y(VQ.hi-sens()):3,y2=VQ?Y(VQ.lo-sens()):PB-1,RC=VB?(VB.none?'#6b7570':bcol(VB.layers===2?VB.over:VB)):'#d9483b',
   mk=`<path d="M${(bx+6).toFixed(1)} ${y1}H${bx.toFixed(1)}V${y2}H${(bx+6).toFixed(1)}" fill="none" stroke="${RC}" stroke-width="2.200"/>`+((vt>=t0&&vt<=t1)?`<path d="M${(vx-6).toFixed(1)} ${y1}H${vx.toFixed(1)}V${y2}H${(vx-6).toFixed(1)}" fill="none" stroke="${RC}" stroke-width="2.200"/><text x="${vx>240?(vx-9).toFixed(1):(vx+4).toFixed(1)}" y="14" font-size="9" font-weight="700" text-anchor="${vx>240?'end':'start'}" fill="${RC}">Stallbesuch</text>`:'');
  return`<svg viewBox="0 0 320 ${PB+20}" style="width:100%">${night}${sep}${box}${sel}${rain}<polyline points="${pts}" fill="none" stroke="var(--ac)" stroke-width="2.4" stroke-linejoin="round"/>${sun}
  <text x="2" y="12" font-size="9" fill="var(--mut)">${r0(hi)}°</text><text x="2" y="${PB-4}" font-size="9" fill="var(--mut)">${r0(lo)}°</text>
  ${mk}${dayLbl(t0,t1,X)}</svg>
- <p class="mut" style="margin:2px 0 0">Linie: gefühlte Temperatur am Platz des Pferdes (${S.horse.house==='open'?'':'Box '+sl(+(S.horse.boxAdj??1))+' °C, '}draußen ${S.horse.shelter?'±0':'−2'} °C)${sun?' · orange gestrichelt: mit Sonne (je nach Farbe der Decke)':''} · Kästchen: Bereich der empfohlenen Decke, gleich wie in der Deckenliste · blau: Regen · dunkelblau: Nacht · rot [ ]: jetzt bis Stallbesuch</p>`}
+ <p class="mut" style="margin:2px 0 0">Linie: gefühlte Temperatur am Platz des Pferdes (${S.horse.house==='open'?'':'Box '+sl(+(S.horse.boxAdj??1))+' °C, '}draußen ${S.horse.shelter?'±0':'−2'} °C)${sun?' · orange gestrichelt: mit Sonne (je nach Farbe der Decke)':''} · Kästchen: Bereich der empfohlenen Decke, gleich wie in der Deckenliste · blau: Regen · dunkelblau: Nacht · Klammern [ ]: jetzt bis Stallbesuch, Höhe und Farbe der dafür empfohlenen Decke</p>`}
 
 // Nächster Stallbesuch: höchstens 3 × 24 h ab jetzt, Einstellung in 4-h-Schritten
 const VMAX=72*36e5;
