@@ -25,7 +25,7 @@ button.s{background:var(--ac2);color:var(--tx)}button.d{background:var(--warn);c
 .big{font-size:1.6rem;font-weight:700;margin:2px 0}.mut{color:var(--mut);font-size:.9rem}
 .tag{display:inline-block;background:var(--ac2);border-radius:20px;padding:2px 10px;font-size:.8rem;margin:2px 4px 2px 0}
 .warn{color:var(--warn)}ul{padding-left:18px;margin:6px 0}
-.tile{border:1px solid var(--bd);border-radius:12px;padding:8px 10px;background:var(--bg);cursor:pointer;min-width:0}.trow{display:flex;align-items:center;gap:8px}.trow .tx{flex:1;min-width:0}.hs{flex:0 0 72px;width:72px;height:50px}.hz{display:flex;flex-direction:column;align-items:center;flex:0 0 72px}.shoes{display:inline-flex;gap:2px;flex:0 0 auto}.shoes svg{width:13px;height:12px;fill:var(--bd)}.shoes svg.on{fill:#b8862b}.tile .tb.nm{white-space:normal;overflow:visible;font-size:.95rem}.gsc{overflow-x:auto;-webkit-overflow-scrolling:touch}.stk{display:grid;grid-template-columns:1fr;gap:8px}.tile.on{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac) inset}
+.tile{border:1px solid var(--bd);border-radius:12px;padding:8px 10px;background:var(--bg);cursor:pointer;min-width:0}.trow{display:flex;align-items:center;gap:8px}.trow .tx{flex:1;min-width:0}.hs{flex:0 0 72px;width:72px;height:50px}.hz{display:flex;flex-direction:column;align-items:center;flex:0 0 72px}.shoes{display:inline-flex;gap:2px;flex:0 0 auto}.shoes svg{width:13px;height:12px;fill:var(--bd)}.shoes svg.on{fill:#b8862b}.tile .tb.nm{white-space:normal;overflow:visible;font-size:.95rem}.gsc{overflow-x:auto;-webkit-overflow-scrolling:touch}.why{margin-top:8px;color:var(--mut);cursor:pointer;padding:4px 0}.cmp{margin-top:12px;padding-top:10px;border-top:1px solid var(--bd)}.cmph{display:flex;align-items:center;gap:10px}.cmph b{flex:1}.cmph button{width:40px;height:36px;min-height:36px;padding:0;font-size:1.3rem}.cmph button:disabled{opacity:.35}.cmph span{min-width:5.5em;text-align:center;color:var(--mut);font-size:.9rem}.cmpn{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:1.05rem}ul.pr{list-style:none;padding:0;margin:4px 0 0}ul.pr li{margin:2px 0}ul.pr li.bad{color:var(--warn,#b3541e)}ul.pr li.ok{color:var(--mut)}.stk{display:grid;grid-template-columns:1fr;gap:8px}.tile.on{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac) inset}
 .tile b{font-size:.9rem}.tile .tl{display:flex;align-items:center;gap:6px}.tile .ic{font-size:1.3rem;margin-right:6px}.tile .tb{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:.85rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.tile .tb i{flex:0 0 10px;height:10px;border-radius:50%}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chips button{flex:0 1 auto;min-height:38px;padding:6px 10px;font-size:.85rem}
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom)}
@@ -61,7 +61,7 @@ migrate();
 if(!S.visit||new Date(S.visit)<new Date())S.visit=nextVisit();
 if(new Date(S.visit).getTime()>Date.now()+72*36e5)S.visit=nextVisit();
 S.from=''; // Von beginnt beim Start immer bei jetzt
-const APPV='51';
+const APPV='52';
 const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
 let W=null,err='',E=null,G=[];
 
@@ -133,7 +133,7 @@ function recommend(w){
   const ok=b=>b.none||!single||(ss[0].box?b.place!=='outdoor':b.place!=='box');
   return cand.filter(ok).map(b=>{const[lo0,hi]=rg(b);
    const lo=b.none?lo0:Math.min(lo0,baseLo); // eine Decke ist nie kälter als keine Decke
-   let cold=0,hot=0,pen=0,top=-99,sc=0,sh=0,mc=0,mh=0,nh=0;
+   let cold=0,hot=0,pen=0,top=-99,sc=0,sh=0,mc=0,mh=0,nh=0,hc=0,hh=0,wetI=0,windI=0,placeI=0,sunHot=0;
    const F=SUNF[(b.none?h.color:b.color)||'mid'],K=+S.sunK;
    for(const s of ss){
     // Sonne: Gefühlte Temperatur enthält schon einen Mittelwert, daher nur die Abweichung der Farbe; Lufttemperatur bekommt die volle Sonnenwirkung
@@ -141,16 +141,16 @@ function recommend(w){
     const hiS=s.wet&&!b.none&&b.waterproof&&I(b)<2?hi+10:hi;
     // Stunde für Stunde: wie weit liegt die gefühlte Temperatur unter bzw. über dem Bereich der Decke?
     for(const x of s.hrs){const cA=x.A+s.adj+(F-.7)*x.r/100*K,cT=x.A+s.adj+F*x.r/100*K,dc=Math.max(0,lo-cA),dh=Math.max(0,cT-hiS);
-     top=Math.max(top,cT);sc+=dc;sh+=dh;mc=Math.max(mc,dc);mh=Math.max(mh,dh);nh++}
-    if(s.wet&&!b.waterproof)pen+=10;if(s.windy&&!b.wind)pen+=1.5;
+     top=Math.max(top,cT);sc+=dc;sh+=dh;mc=Math.max(mc,dc);mh=Math.max(mh,dh);nh++;if(dc>.5)hc++;if(dh>.5){hh++;if(x.r>=120)sunHot=1}}
+    if(s.wet&&!b.waterproof){pen+=10;wetI=1}if(s.windy&&!b.wind){pen+=1.5;windI=1}
     // Regen: ist ein Halsteil vorhanden, aber nicht angezogen, gibt es einen Abzug (mit Wind stärker) – es hält Hals und Mähne trocken
     if(!b.none&&!b.neckOn&&s.wet){const hn=b.layers===2?(b.over.base||b.over).neck:(b.base||b).neck;if(hn)pen+=s.windy?1.4:.9}
-    if(!single&&(s.box?b.place==='outdoor':b.place==='box'))pen+=2.5}
+    if(!single&&(s.box?b.place==='outdoor':b.place==='box')){pen+=2.5;placeI=1}}
    // Mischform: zählt hauptsächlich, wie lange und wie stark es zu kalt/zu warm ist (Durchschnitt über die Stunden);
    // sehr kalte Stunden (mehr als 4 °C unter dem Bereich) zählen zusätzlich, sehr warme (über 6 °C) etwas
    if(nh){cold=sc/nh+Math.max(0,mc-4)*.5;hot=sh/nh+Math.max(0,mh-6)*.3}
    const slip=(b.layers===2?.4:0)+(b.neckOn?.3:0); // zwei Schichten können verrutschen; Halsteil ist ein Handgriff mehr
-   return{b,lo,hi,cold,hot,pen,sunUp:top-eMax,score:cold*1.5+hot+pen+slip+(b.none?0:.1+Math.abs((lo+hi)/2-(eMin+eMax)/2)*.05)}}).sort((a,b)=>a.score-b.score)};
+   return{b,lo,hi,cold,hot,pen,st:{hc,hh,mc,mh,wetI,windI,placeI,sunHot},sunUp:top-eMax,score:cold*1.5+hot+pen+slip+(b.none?0:.1+Math.abs((lo+hi)/2-(eMin+eMax)/2)*.05)}}).sort((a,b)=>a.score-b.score)};
  const c=evaluate(segs),eMin=Math.min(...segs.map(s=>s.eMin)),eMax=Math.max(...segs.map(s=>s.eMax));
  // Wechselplan: bester Zustand je Abschnitt, mit möglichst wenigen Handgriffen dazwischen
  let plan=null;
@@ -234,8 +234,50 @@ function tileHTML(i,t,w,sel,lab,sub,wide,extra,pre){
  const R=w.res.err?null:recommend(w.res);
  const hz=R?horseSVG(day,R.best.b.none?null:R.best.b):'';
  return`<div class="tile${wide?' wide':''}${sel?' on':''}" onclick="setWin(${i})"><div class="trow"><div class="tx">${t?'':`<div class="tl">${ic}<b>${lab}</b></div>`}${extra||''}${sub?`<div class="mut">${sub}</div>`:''}${t?`<div class="tl">${ic}<span>${(pre||'').replace(/:\s*$/,'')}</span></div>`:''}<div class="tb nm">${R?`<b>${esc(R.best.b.name)}</b>${shoes(stars(R.best))}`:'keine Wetterdaten'}</div></div>${hz||''}</div></div>`}
-function setWin(i){const was=(ACT===i&&SHOW);ACT=i;WHY=false;SHOW=!was;drawToday()}
+function setWin(i){const was=(ACT===i&&SHOW);ACT=i;WHY=false;WHY2=false;CMPO=null;SHOW=!was;drawToday()}
 function toggleWhy(){WHY=!WHY;drawToday()}
+// Vergleich im Detailfenster: Abstand zur Empfehlung auf der Wärme-Leiter (null = Standard: eine Stufe leichter)
+let CMPO=null,WHY2=false;
+function cmpStep(d,n){let o=CMPO+d;if(o===0)o+=d;if(o<-n.lo||o>n.hi)return;CMPO=o;WHY2=false;drawToday()}
+function toggleWhy2(){WHY2=!WHY2;drawToday()}
+// Wärme-Leiter: alle Varianten nach Wärmewert, sehr ähnliche (gleicher Wärmewert ±0,5, gleiche Wasserdichtigkeit) zusammengefasst
+function ladder(R){const g=new Map();R.all.forEach(x=>{const b=x.b,k=b.none?'none':Math.round(+b.ins||0)+'|'+(b.waterproof?1:0);const o=g.get(k);if(!o||x.score<o.score)g.set(k,x)});
+ const L=[...g.values()].sort((a,b)=>(a.b.none?-1:+a.b.ins||0)-(b.b.none?-1:+b.b.ins||0)||a.score-b.score);let i=L.indexOf(R.best);if(i<0){L.push(R.best);L.sort((a,b)=>(a.b.none?-1:+a.b.ins||0)-(b.b.none?-1:+b.b.ins||0));i=L.indexOf(R.best)}return{L,i}}
+// Kurze Beschreibung der Probleme einer Variante (höchstens drei Zeilen, Probleme zuerst)
+function probs(q){const t=q.st||{},b=q.b,P=[],G=[];
+ if(t.hc)P.push(`zu kalt: bis ${r0(t.mc)} °C unter dem Bereich, etwa ${t.hc} Std.`);
+ if(t.hh)P.push(`zu warm${t.sunHot?' (mit Sonne)':''}: bis ${r0(t.mh)} °C über dem Bereich, etwa ${t.hh} Std.${t.mh>4?' – Schwitzgefahr':''}`);
+ if(t.wetI)P.push('nicht wasserdicht – Regen erwartet');
+ if(t.windI)P.push('nicht winddicht – starker Wind');
+ if(t.placeI)P.push(b.place==='box'?'eigentlich nur für die Box gedacht':'eigentlich nur für draußen gedacht');
+ if(b.layers===2)P.push('zwei Schichten – können verrutschen');
+ if(b.neckOn)P.push('mit Halsteil – ein Handgriff mehr');
+ if(!P.length)return['✓ passt im ganzen Zeitraum'];
+ if(!t.hc)G.push('✓ nie zu kalt');else if(!t.hh)G.push('✓ nie zu warm');
+ return[...P.map(x=>'✗ '+x),...G].slice(0,3)}
+// Warum-Liste für eine Variante; Wechselplan und Spannen-Hinweise nur bei der Empfehlung
+function whyHTML(R,q,best,big,airy){const b=q.b;let h=`<ul><li>Für dein Pferd (Empfindlichkeit ${sens()>0?'+':''}${sens()}) fühlt sich der Zeitraum so an:</li>`;
+ R.segs.forEach(g=>{h+=`<li>${g.box?'In der Box':'Draußen'}: ${r0(g.eMin)} bis ${r0(g.eMax)} °C${g.wet?' · Regen':''}${g.windy?' · starker Wind':''}</li>`});
+ if(!b.none)h+=`<li>${esc(b.name)} passt bei ${r0(q.lo-sens())} bis ${r0(q.hi-sens())} °C (wie in der Deckenliste).</li>`;
+ if(q.sunUp>=1)h+=`<li>Sonne draußen: ${b.none?'Fell ('+COLORS[S.horse.color||'mid'].toLowerCase()+')':'Decke ('+COLORS[b.color||'mid'].toLowerCase()+')'} wird bis ca. ${r0(q.sunUp)} °C wärmer, die Spanne geht dann bis ${r0(R.eMax+q.sunUp)} °C.</li>`;
+ if(R.wet)h+=`<li>Regen draußen erwartet: ${b.waterproof?'diese Decke ist wasserdicht.':'<span class="warn">diese Variante ist nicht wasserdicht.</span>'}</li>`;
+ if(R.windy)h+=`<li>Starker Wind draußen: ${b.wind||b.none?'':'<span class="warn">nicht winddicht.</span>'}${b.wind?'diese Decke ist winddicht.':''}</li>`;
+ if(b.neckOn)h+='<li>Halsteil anziehen: es wärmt zusätzlich und hält Hals und Mähne trocken.</li>';
+ if(R.mixed&&!b.none&&b.place==='outdoor')h+='<li class="warn">Diese Decke ist nur für draußen vorgesehen und bleibt auch in der Box drauf.</li>';
+ {const L=[b.liner,b.under&&b.under.liner,b.over&&b.over.liner].filter(Boolean);if(L.length)h+=`<li>Liner einlegen: ${L.map(l=>esc(l.name)).join(', ')}.</li>`}
+ if(b.layers===2)h+=`<li>Zwei Schichten: unten ${esc(b.under.name)}, darüber ${esc(b.over.name)}. Sie können verrutschen, die Unterdecke gut fixieren.</li>`;
+ const t=q.st||{};
+ if(t.hc)h+=`<li class="warn">Zu kalt: etwa ${t.hc} Std. unter dem Bereich, am kältesten ${r0(t.mc)} °C darunter.</li>`;
+ if(t.hh)h+=`<li${t.mh>4?' class="warn"':''}>Zu warm: etwa ${t.hh} Std. über dem Bereich, höchstens ${r0(t.mh)} °C darüber${t.sunHot?' (in der Sonne)':''}.</li>`;
+ if(best){
+ if(R.plan){const ou=R.plan.a,bx=R.plan.b,nm=x=>x.b.none?'Keine Decke':esc(x.b.name),bn=i=>typeof i==='string'&&i[0]==='n'?'Halsteil':esc((S.blankets.find(x=>x.id===i)||{}).name||'');
+  if(nm(ou)!==nm(bx)){const rm=bx.b.parts.filter(i=>!ou.b.parts.includes(i)),ad=ou.b.parts.filter(i=>!bx.b.parts.includes(i));
+   h+=`<li>Mit Wechsel: draußen ${nm(ou)}, in der Box ${nm(bx)}. Beim Rausbringen: ${[rm.length?'ausziehen '+rm.map(bn).join(', '):'',ad.length?'anziehen '+ad.map(bn).join(', '):''].filter(Boolean).join('; ')}. Beim Reinholen umgekehrt.</li>`}}
+ if(big)h+=`<li>Große Spanne von ${r0(R.eMin)} bis ${r0(R.eMax)} °C: nachts kalt, tagsüber warm. Empfohlen ist die beste Mischung${airy?'; ' +esc(airy.b.name)+' ist luftiger und staut tagsüber weniger Wärme':''}. Wenn möglich, tagsüber eine Schicht ausziehen.</li>`;
+ else if(q.cold>2.5)h+=`<li class="warn">Dir fehlt eine ${R.wet?'wasserdichte ':''}Decke, die bis ca. ${r0(R.eMin)} °C reicht (für dein Pferd gerechnet).</li>`;
+ if(q.pen>=6)h+='<li class="warn">Keine wasserdichte Decke passt: Dir fehlt eine passende Regendecke.</li>';
+ if(q.hot>4&&!big)h+='<li class="warn">Eher zu warm: Dir fehlt eine leichtere Decke.</li>'}
+ return h+'</ul>'}
 const fdt=d=>new Date(d).toLocaleString('de-DE',{weekday:'long',hour:'2-digit',minute:'2-digit'});
 function drawToday(){
  SL=W?slots(Math.min(8,Math.max(2,+S.nSlots||3))):[];if(ACT>=SL.length)ACT=-1;
@@ -254,33 +296,24 @@ function drawToday(){
  const from=win?win.a:cf,to=win?win.b:ct,title='Details zu '+(win?slotLab(win):'Nächster Stallbesuch (jetzt bis '+fdt(to)+')'),
   ic=W?wico(true,wkind(from,to)):'';
   const H0=h;h='';
-  h+=`<div class="card" style="cursor:pointer" onclick="toggleWhy()"><div class="tl" style="display:flex;align-items:center;gap:8px">${ic}<h2 style="margin:0">${title}</h2></div>
+  h+=`<div class="card"><div class="tl" style="display:flex;align-items:center;gap:8px">${ic}<h2 style="margin:0">${title}</h2></div>
  <div class="mut" style="margin-top:6px;display:flex;align-items:center;gap:8px">${shoes(stars(q))}<span>${lab}</span></div><div class="big">${esc(b.name)}</div>`;
  const AD=sens(); // Bereich wie in der Deckenliste und im Verlauf
  if(!b.none)h+=`<div class="mut">${b.layers===2?'Zwei Schichten':esc(TYPES[b.type]||'')} · ${b.grams||0} g · geeignet ${r0(q.lo-AD)} bis ${r0(q.hi-AD)} °C</div>`;
  h+=`<div style="margin-top:6px"><span class="tag">gefühlt min ${r0(w.minA)} °C</span><span class="tag">max ${r0(w.maxT)} °C</span><span class="tag">Wind ${r0(w.wind)} km/h</span><span class="tag">Regen ${w.rain.toFixed(1)} mm (${r0(w.prob)} %)</span>${w.sunMax>0?`<span class="tag">Sonne ${w.sunMax>=300?'stark':w.sunMax>=120?'mäßig':'schwach'}</span>`:''}</div>`;
  const airy=(big||q.hot>2)?R.all.find(x=>!x.b.none&&['sweat','fleece'].includes(x.b.type)&&x.b.name!==b.name):null;
- if(R.alt)h+=`<div class="mut">Alternative: <b>${esc(R.alt.b.name)}</b>${R.alt.cold>q.cold+.25?' (kann zu kalt sein)':R.alt.hot>q.hot+.25?' (kann zu warm sein)':''}</div>`;
  if(airy)h+=`<div class="mut">Luftig (staut keine Wärme): <b>${esc(airy.b.name)}</b></div>`;
- h+=`<div class="mut" style="margin-top:6px">${WHY?'▲ Warum? (antippen zum Schließen)':'▼ Warum? (antippen)'}</div>`;
- if(WHY){h+=`<ul><li>Für dein Pferd (Empfindlichkeit ${sens()>0?'+':''}${sens()}) fühlt sich der Zeitraum so an:</li>`;
- R.segs.forEach(g=>{h+=`<li>${g.box?'In der Box':'Draußen'}: ${r0(g.eMin)} bis ${r0(g.eMax)} °C${g.wet?' · Regen':''}${g.windy?' · starker Wind':''}</li>`});
- if(q.sunUp>=1)h+=`<li>Sonne draußen: ${b.none?'Fell ('+COLORS[S.horse.color||'mid'].toLowerCase()+')':'Decke ('+COLORS[b.color||'mid'].toLowerCase()+')'} wird bis ca. ${r0(q.sunUp)} °C wärmer, die Spanne geht dann bis ${r0(R.eMax+q.sunUp)} °C.</li>`;
- if(R.wet)h+='<li>Regen draußen erwartet: wasserdichte Decke nötig.</li>';
- if(R.windy)h+='<li>Starker Wind draußen: Decke sollte winddicht sein.</li>';
- if(b.neckOn)h+='<li>Halsteil anziehen: es wärmt zusätzlich und hält Hals und Mähne trocken.</li>';
- if(R.mixed&&!b.none&&b.place==='outdoor')h+='<li class="warn">Diese Decke ist nur für draußen vorgesehen und bleibt auch in der Box drauf.</li>';
- {const L=[b.liner,b.under&&b.under.liner,b.over&&b.over.liner].filter(Boolean);if(L.length)h+=`<li>Liner einlegen: ${L.map(l=>esc(l.name)).join(', ')}.</li>`}
- if(b.layers===2)h+=`<li>Zwei Schichten: unten ${esc(b.under.name)}, darüber ${esc(b.over.name)}. Sie können verrutschen, die Unterdecke gut fixieren.</li>`;
- if(R.plan){const ou=R.plan.a,bx=R.plan.b,nm=x=>x.b.none?'Keine Decke':esc(x.b.name),bn=i=>typeof i==='string'&&i[0]==='n'?'Halsteil':esc((S.blankets.find(x=>x.id===i)||{}).name||'');
-  if(nm(ou)!==nm(bx)){const rm=bx.b.parts.filter(i=>!ou.b.parts.includes(i)),ad=ou.b.parts.filter(i=>!bx.b.parts.includes(i));
-   h+=`<li>Mit Wechsel: draußen ${nm(ou)}, in der Box ${nm(bx)}. Beim Rausbringen: ${[rm.length?'ausziehen '+rm.map(bn).join(', '):'',ad.length?'anziehen '+ad.map(bn).join(', '):''].filter(Boolean).join('; ')}. Beim Reinholen umgekehrt.</li>`}}
- if(R.eMax-R.eMin>=12)h+='<li>Große Tag-/Nacht-Spanne: Schwitzen oder Frieren ist möglich, ggf. früher am Tag wechseln.</li>';
- if(big)h+=`<li>Große Spanne von ${r0(R.eMin)} bis ${r0(R.eMax)} °C: nachts kalt, tagsüber warm. Empfohlen ist die beste Mischung${q.cold>2.5?' (in der kältesten Zeit etwas knapp)':''}${airy?'; ' +esc(airy.b.name)+' ist luftiger und staut tagsüber weniger Wärme':''}. Wenn möglich, tagsüber eine Schicht ausziehen.</li>`;
- else if(q.cold>2.5)h+=`<li class="warn">Zu kalt: Dir fehlt eine ${R.wet?'wasserdichte ':''}Decke, die bis ca. ${r0(R.eMin)} °C reicht (für dein Pferd gerechnet).</li>`;
- if(q.pen>=6)h+='<li class="warn">Keine wasserdichte Decke passt: Dir fehlt eine passende Regendecke.</li>';
- if(q.hot>4&&!big)h+='<li class="warn">Eher zu warm: Dir fehlt eine leichtere Decke.</li>';
- h+='</ul>'}
+ h+=`<div class="why" onclick="toggleWhy()">${WHY?'▲ Warum? (antippen zum Schließen)':'▼ Warum? (antippen)'}</div>`;
+ if(WHY)h+=whyHTML(R,q,true,big,airy);
+ // Vergleich mit leichteren/wärmeren Varianten
+ {const{L,i}=ladder(R),n={lo:i,hi:L.length-1-i};
+  if(L.length>1){if(CMPO===null)CMPO=i>0?-1:1;CMPO=Math.max(-n.lo,Math.min(n.hi,CMPO));if(CMPO===0)CMPO=i>0?-1:1;
+   const c=i+CMPO,canDn=c-1>=0&&!(c-1===i&&c-2<0),canUp=c+1<=L.length-1&&!(c+1===i&&c+2>L.length-1),x=L[c],xb=x.b,pos=CMPO<0?`${-CMPO} leichter`:`${CMPO} wärmer`;
+   h+=`<div class="cmp"><div class="cmph"><b>Vergleichen</b><button class="s" aria-label="leichter" onclick="cmpStep(-1,{lo:${n.lo},hi:${n.hi}})"${canDn?'':' disabled'}>−</button><span>${pos}</span><button class="s" aria-label="wärmer" onclick="cmpStep(1,{lo:${n.lo},hi:${n.hi}})"${canUp?'':' disabled'}>+</button></div>
+   <div class="cmpn"><b>${xb.none?'Keine Decke':esc(xb.name)}</b>${shoes(stars(x))}</div>
+   ${xb.none?'':`<div class="mut">${xb.layers===2?'Zwei Schichten':esc(TYPES[xb.type]||'')} · ${xb.grams||0} g · geeignet ${r0(x.lo-AD)} bis ${r0(x.hi-AD)} °C</div>`}
+   <ul class="pr">${probs(x).map(t=>`<li class="${t[0]==='✗'?'bad':'ok'}">${esc(t)}</li>`).join('')}</ul>
+   <div class="why" onclick="toggleWhy2()">${WHY2?'▲ Warum? (antippen zum Schließen)':'▼ Warum? (antippen)'}</div>${WHY2?whyHTML(R,x,false,big,null):''}</div>`}}
  h+='</div>';
  const DET=SHOW?h:'';h=H0;
  if(W)h+=`<div class="card"><h2>Wetter${S.loc?' · '+esc(S.loc.name):''}</h2>${bigChart(from,to)}</div>`;
@@ -337,7 +370,7 @@ function bigChart(from,to){if(!W||!SL.length)return'';
 const VMAX=72*36e5;
 const vlab=v=>{const d=new Date(v),m=d.getMinutes();return d.toLocaleDateString('de-DE',{weekday:'short'}).replace('.','')+' '+d.getHours()+(m?':'+String(m).padStart(2,'0'):'')+'h'};
 function clampVisit(){const n=Date.now(),v=new Date(S.visit).getTime();if(!(v>n+36e5)||v>n+VMAX){const d=new Date(nextVisit());S.visit=loc16(new Date(Math.min(Math.max(d.getTime(),n+36e5),n+VMAX)))}}
-function stepVisit(h){const n=Date.now(),v=new Date(S.visit).getTime()+h*36e5;if(v<n+36e5||v>n+VMAX)return;S.visit=loc16(new Date(v));S.vt=S.visit.slice(11,16);ACT=-1;SHOW=true;WHY=false;save();drawToday()}
+function stepVisit(h){const n=Date.now(),v=new Date(S.visit).getTime()+h*36e5;if(v<n+36e5||v>n+VMAX)return;S.visit=loc16(new Date(v));S.vt=S.visit.slice(11,16);ACT=-1;SHOW=true;WHY=false;WHY2=false;CMPO=null;save();drawToday()}
 function setVisit(v){if(v){S.visit=v;S.vt=v.slice(11,16);ACT=-1;SHOW=true;WHY=false;save();drawToday()}}
 function inH(n){S.visit=loc16(new Date(fromBase().getTime()+n*36e5));save();drawToday()}
 
