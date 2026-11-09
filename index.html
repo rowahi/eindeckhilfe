@@ -25,7 +25,7 @@ button.s{background:var(--ac2);color:var(--tx)}button.d{background:var(--warn);c
 .big{font-size:1.6rem;font-weight:700;margin:2px 0}.mut{color:var(--mut);font-size:.9rem}
 .tag{display:inline-block;background:var(--ac2);border-radius:20px;padding:2px 10px;font-size:.8rem;margin:2px 4px 2px 0}
 .warn{color:var(--warn)}ul{padding-left:18px;margin:6px 0}
-.tile{border:1px solid var(--bd);border-radius:12px;padding:8px 10px;background:var(--bg);cursor:pointer;min-width:0}.trow{display:flex;align-items:center;gap:8px}.trow .tx{flex:1;min-width:0}.hs{flex:0 0 72px;width:72px;height:50px}.hz{display:flex;flex-direction:column;align-items:center;flex:0 0 72px}.shoes{display:inline-flex;gap:2px;flex:0 0 auto}.shoes svg{width:13px;height:12px;fill:var(--bd)}.shoes svg.on{fill:#b8862b}.tile .tb.nm{white-space:normal;overflow:visible;font-size:.95rem}.gsc{overflow-x:auto;-webkit-overflow-scrolling:touch}.why{margin-top:8px;color:var(--mut);cursor:pointer;padding:4px 0}.cmp{margin-top:12px;padding-top:10px;border-top:1px solid var(--bd)}.cmph{display:flex;align-items:center;gap:10px}.cmph b{flex:1}.cmph button{width:40px;height:36px;min-height:36px;padding:0;font-size:1.3rem}.cmph button:disabled{opacity:.35}.cmph span{min-width:5.5em;text-align:center;color:var(--mut);font-size:.9rem}.cmpn{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:1.05rem}ul.pr{list-style:none;padding:0;margin:4px 0 0}ul.pr li{margin:2px 0}ul.pr li.bad{color:var(--warn,#b3541e)}ul.pr li.ok{color:var(--mut)}.stk{display:grid;grid-template-columns:1fr;gap:8px}.tile.on{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac) inset}
+.tile{border:1px solid var(--bd);border-radius:12px;padding:8px 10px;background:var(--bg);cursor:pointer;min-width:0}.trow{display:flex;align-items:center;gap:8px}.trow .tx{flex:1;min-width:0}.hs{flex:0 0 72px;width:72px;height:50px}.hz{display:flex;flex-direction:column;align-items:center;flex:0 0 72px}.shoes{display:inline-flex;gap:2px;flex:0 0 auto}.shoes svg{width:13px;height:12px;fill:var(--bd)}.shoes svg.on{fill:#b8862b}.tile .tb.nm{white-space:normal;overflow:visible;font-size:.95rem}.gsc{overflow-x:auto;-webkit-overflow-scrolling:touch}.why{margin-top:8px;color:var(--mut);cursor:pointer;padding:4px 0}.cmp{margin-top:12px;padding-top:10px;border-top:1px solid var(--bd)}.cmph{display:flex;align-items:center;gap:10px}.cmph b{flex:1}.cmph button{width:40px;height:36px;min-height:36px;padding:0;font-size:1.3rem}.cmph button:disabled{opacity:.35}.cmph span{min-width:5.5em;text-align:center;color:var(--mut);font-size:.9rem}.cmpn{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:1.05rem}ul.pr{list-style:none;padding:0;margin:4px 0 0}ul.pr li{margin:2px 0}ul.pr li.bad{color:var(--warn,#b3541e)}ul.pr li.ok{color:var(--mut)}ul.leg{list-style:none;padding:0;margin:4px 0 0}ul.leg li{display:flex;align-items:center;gap:10px;margin:6px 0}ul.leg svg{flex:0 0 28px}.stk{display:grid;grid-template-columns:1fr;gap:8px}.tile.on{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac) inset}
 .tile b{font-size:.9rem}.tile .tl{display:flex;align-items:center;gap:6px}.tile .ic{font-size:1.3rem;margin-right:6px}.tile .tb{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:.85rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.tile .tb i{flex:0 0 10px;height:10px;border-radius:50%}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chips button{flex:0 1 auto;min-height:38px;padding:6px 10px;font-size:.85rem}
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom)}
@@ -50,7 +50,11 @@ function migrate(){const n=S.none||{minC:14,minL:4};
  S.blankets.forEach(b=>{if(b.ins==null)b.ins=b.minL!=null?r1(Math.max(0,(+n.minL)-b.minL)):insDef(b.type,b.grams);delete b.minC;delete b.maxC;delete b.minL;delete b.maxL});
  const h=S.horse;if(h.sens==null)h.sens=(h.coat==='full'?-10:h.coat==='partial'?-5:0)+(h.cold==='cold'?-3:h.cold==='robust'?3:0);delete h.coat;delete h.cold;delete S.none}
 const loc16=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,16);
-const nextVisit=()=>{const d=new Date();d.setDate(d.getDate()+1);d.setHours(17,30,0,0);return loc16(d)};
+const nextVisit=()=>{const d=new Date();d.setDate(d.getDate()+1);d.setHours(16,0,0,0);return loc16(d)};
+// Stallbesuch nur um 8, 12, 16 oder 20 Uhr, frühestens in 1 Std., höchstens in 72 Std.
+const VHRS=[8,12,16,20];
+function visitTimes(){const n=Date.now(),o=[],d=new Date();d.setHours(0,0,0,0);for(let k=0;k<5;k++){VHRS.forEach(h=>{const t=new Date(d);t.setDate(d.getDate()+k);t.setHours(h,0,0,0);const v=t.getTime();if(v>=n+36e5&&v<=n+72*36e5)o.push(v)})}return o}
+function snapVisit(){const A=visitTimes();if(!A.length)return;const v=new Date(S.visit).getTime();let b=A[0];A.forEach(x=>{if(Math.abs(x-v)<Math.abs(b-v))b=x});if(b!==v)S.visit=loc16(new Date(b))}
 const COLORS={dark:'Dunkel',mid:'Mittel',light:'Hell'},SUNF={dark:1,mid:.7,light:.4};
 const TYPES={rain:'Regendecke',outdoor:'Outdoor-Winterdecke',fleece:'Fleece',sweat:'Abschwitzdecke',stable:'Stalldecke',liner:'Liner (für bestimmte Decken)'};
 const PLACE={outdoor:'nur draußen',box:'nur Box',both:'draußen & Box'};
@@ -60,8 +64,9 @@ S.horse=Object.assign({outT:'07:00',inT:'17:00',boxAdj:1,color:'mid'},S.horse);i
 migrate();
 if(!S.visit||new Date(S.visit)<new Date())S.visit=nextVisit();
 if(new Date(S.visit).getTime()>Date.now()+72*36e5)S.visit=nextVisit();
+snapVisit();
 S.from=''; // Von beginnt beim Start immer bei jetzt
-const APPV='53';
+const APPV='54';
 const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
 let W=null,err='',E=null,G=[];
 
@@ -283,7 +288,7 @@ function drawToday(){ALTR=null;
  SL=W?slots(Math.min(8,Math.max(2,+S.nSlots||3))):[];if(ACT>=SL.length)ACT=-1;
  const win=ACT>=0?SL[ACT]:null,el=$('#v-today'),w=win?analyse(win.a,win.b):analyse(),m=S.manual;
  const cf=fromBase(),ct=new Date(S.visit),cw={a:cf,b:ct,res:analyse()};
- const vv=new Date(S.visit).getTime(),nw=Date.now(),inp=`<div class="dt1" onclick="event.stopPropagation()"><span>bis</span><button class="s" aria-label="4 Stunden früher" onclick="stepVisit(-4)"${vv-4*36e5<nw+36e5?' disabled':''}>−</button><b>${vlab(S.visit)}</b><button class="s" aria-label="4 Stunden später" onclick="stepVisit(4)"${vv+4*36e5>nw+VMAX?' disabled':''}>+</button></div>`;
+ snapVisit();const VA=visitTimes(),vi=VA.indexOf(new Date(S.visit).getTime()),inp=`<div class="dt1" onclick="event.stopPropagation()"><span>bis</span><button class="s" aria-label="früher" onclick="stepVisit(-1)"${vi>0?'':' disabled'}>−</button><b>${vlab(S.visit)}</b><button class="s" aria-label="später" onclick="stepVisit(1)"${vi>=0&&vi<VA.length-1?'':' disabled'}>+</button></div>`;
  let h=hero()+`<div class="card"><h2>Decke Empfehlung</h2><div class="stk">${tileHTML(-1,null,cw,SHOW&&ACT===-1,'Bis zum nächsten Stallbesuch','',1,inp)}${SL.map((t,i)=>tileHTML(i,t,{a:t.a,b:t.b,res:analyse(t.a,t.b)},SHOW&&ACT===i,slotLab(t),'',0,'',slotFor(t)+': ')).join('')}</div></div>`;
  if(err||!W)h+=`<div class="card"><p class="warn">${esc(err)}</p><h2>Wetter manuell</h2><div class="g2">
  <div><label>Tiefste gefühlte °C</label><input type="number" value="${m.minA}" onchange="S.manual.minA=this.value;save();drawToday()"></div>
@@ -367,13 +372,26 @@ function bigChart(from,to){if(!W||!SL.length)return'';
  return`<div class="gsc"><svg viewBox="0 0 ${VWD.toFixed(0)} ${PB+20}" style="width:${(VWD/320*100).toFixed(1)}%;display:block">${night}${sep}${box}${alt}${sel}${rain}<polyline points="${pts}" fill="none" stroke="var(--ac)" stroke-width="2.4" stroke-linejoin="round"/>${sun}
  <text x="2" y="12" font-size="9" fill="var(--mut)">${r0(hi)}°</text><text x="2" y="${PB-4}" font-size="9" fill="var(--mut)">${r0(lo)}°</text>
  ${mk}${dayLbl(t0,t1,X)}</svg></div>${GW>301?'<p class="mut" style="margin:2px 0 0">↔ seitlich wischen für den ganzen Zeitraum</p>':''}
- <p class="mut" style="margin:2px 0 0">Linie: gefühlte Temperatur am Platz des Pferdes (${S.horse.house==='open'?'':'Box '+sl(+(S.horse.boxAdj??1))+' °C, '}draußen ${S.horse.shelter?'±0':'−2'} °C)${sun?' · orange gestrichelt: mit Sonne (je nach Farbe der Decke)':''} · Kästchen: Bereich der empfohlenen Decke, gleich wie in der Deckenliste · blau: Regen · dunkelblau: Nacht · Klammern [ ]: jetzt bis Stallbesuch, Höhe und Farbe der dafür empfohlenen Decke</p>`}
+ ${legend(!!sun)}`}
+// Aufklappbare Erklärung zur Grafik: je Zeile ein kleines Bild und ein kurzer Satz
+let GLEG=false;function toggleLeg(){GLEG=!GLEG;drawToday()}
+function legend(sun){const sw=(x)=>`<svg viewBox="0 0 28 16" width="28" height="16" aria-hidden="true">${x}</svg>`,h=S.horse;
+ const L=[[sw('<polyline points="1,12 9,6 17,9 27,3" fill="none" stroke="var(--ac)" stroke-width="2.400"/>'),`Temperatur: so fühlt es sich am Platz des Pferdes an${h.house==='open'?'':' (Box '+sl(+(h.boxAdj??1))+' °C'}${h.house==='open'?' (':', '}draußen ${h.shelter?'±0':'−2'} °C)`],
+  [sw('<polyline points="1,12 9,12 9,4 27,4" fill="none" stroke="var(--ac)" stroke-width="2.400"/>'),'Stufe: Wechsel Weide ↔ Box'],
+  ...(sun?[[sw('<polyline points="1,13 9,6 17,4 27,9" fill="none" stroke="#e8902c" stroke-width="1.600" stroke-dasharray="3 2"/>'),'Orange gestrichelt: mit Sonne auf der Decke']]:[]),
+  [sw('<rect x="2" y="3" width="24" height="10" rx="2" fill="#7b4a2a" fill-opacity=".22" stroke="#7b4a2a"/>'),'Kästchen: hier passt die empfohlene Decke (in ihrer Farbe)'],
+  [sw('<rect x="2" y="3" width="24" height="10" rx="2" fill="none" stroke="#e85a9b" stroke-width="1.600" stroke-dasharray="4 3"/>'),'Gestrichelt: die Decke, mit der du vergleichst'],
+  [sw('<path d="M8 2H3V14H8M20 2H25V14H20" fill="none" stroke="#7b4a2a" stroke-width="2"/>'),'Klammern: jetzt bis Stallbesuch'],
+  [sw('<rect x="1" y="1" width="12" height="14" fill="#1f3a8a" opacity=".38"/><rect x="15" y="1" width="12" height="14" fill="#ffd54a" opacity=".3"/>'),'Dunkelblau: Nacht · Hellgelb: Tag'],
+  [sw('<rect x="6" y="8" width="3" height="7" fill="#4a90d9"/><rect x="12" y="5" width="3" height="10" fill="#4a90d9"/><rect x="18" y="10" width="3" height="5" fill="#4a90d9"/>'),'Blaue Striche: Regen'],
+  [sw('<rect x="2" y="2" width="24" height="12" rx="2" fill="none" stroke="var(--ac)" stroke-width="2"/>'),'Grüner Rahmen: gewählter Halbtag']];
+ return`<div class="why" onclick="toggleLeg()">${GLEG?'▲ Erklärung zur Grafik (antippen zum Schließen)':'▼ Erklärung zur Grafik'}</div>${GLEG?`<ul class="leg">${L.map(([i,t])=>`<li>${i}<span>${t}</span></li>`).join('')}</ul>`:''}`}
 
 // Nächster Stallbesuch: höchstens 3 × 24 h ab jetzt, Einstellung in 4-h-Schritten
 const VMAX=72*36e5;
 const vlab=v=>{const d=new Date(v),m=d.getMinutes();return d.toLocaleDateString('de-DE',{weekday:'short'}).replace('.','')+' '+d.getHours()+(m?':'+String(m).padStart(2,'0'):'')+'h'};
 function clampVisit(){const n=Date.now(),v=new Date(S.visit).getTime();if(!(v>n+36e5)||v>n+VMAX){const d=new Date(nextVisit());S.visit=loc16(new Date(Math.min(Math.max(d.getTime(),n+36e5),n+VMAX)))}}
-function stepVisit(h){const n=Date.now(),v=new Date(S.visit).getTime()+h*36e5;if(v<n+36e5||v>n+VMAX)return;S.visit=loc16(new Date(v));S.vt=S.visit.slice(11,16);ACT=-1;SHOW=true;WHY=false;WHY2=false;CMPO=0;save();drawToday()}
+function stepVisit(d){snapVisit();const A=visitTimes(),i=A.indexOf(new Date(S.visit).getTime()),j=i+(d>0?1:-1);if(i<0||j<0||j>=A.length)return;S.visit=loc16(new Date(A[j]));S.vt=S.visit.slice(11,16);ACT=-1;SHOW=true;WHY=false;WHY2=false;CMPO=0;save();drawToday()}
 function setVisit(v){if(v){S.visit=v;S.vt=v.slice(11,16);ACT=-1;SHOW=true;WHY=false;save();drawToday()}}
 function inH(n){S.visit=loc16(new Date(fromBase().getTime()+n*36e5));save();drawToday()}
 
