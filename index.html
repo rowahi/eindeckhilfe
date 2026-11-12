@@ -25,7 +25,7 @@ button.s{background:var(--ac2);color:var(--tx)}button.d{background:var(--warn);c
 .big{font-size:1.6rem;font-weight:700;margin:2px 0}.mut{color:var(--mut);font-size:.9rem}
 .tag{display:inline-block;background:var(--wx);color:var(--wxt);border-radius:20px;padding:2px 10px;font-size:.8rem;margin:2px 4px 2px 0}
 .warn{color:var(--warn)}ul{padding-left:18px;margin:6px 0}
-.tile{border:1px solid var(--bd);border-radius:12px;padding:8px 10px;background:var(--bg);cursor:pointer;min-width:0}.trow{display:flex;align-items:center;gap:8px}.trow .tx{flex:1;min-width:0}.hs{flex:0 0 72px;width:72px;height:50px}.hz{display:flex;flex-direction:column;align-items:center;flex:0 0 72px}.shoes{display:inline-flex;gap:2px;flex:0 0 auto}.shoes svg{width:13px;height:12px;fill:var(--bd)}.shoes svg.on{fill:#b8862b}.tile .tb.nm{white-space:normal;overflow:visible;font-size:.95rem}.gsc{overflow-x:auto;-webkit-overflow-scrolling:touch}.why{display:inline-block;margin-top:8px;background:var(--ac2);color:var(--tx);border-radius:9px;padding:7px 12px;cursor:pointer;font-size:.9rem}.cmp{margin-top:12px;padding-top:10px;border-top:1px solid var(--bd)}.cmph{display:flex;align-items:center;gap:10px}.cmph b{flex:1}.cmph button{width:40px;height:36px;min-height:36px;padding:0;font-size:1.3rem}.cmph button:disabled{opacity:.35}.cmph span{min-width:5.5em;text-align:center;color:var(--mut);font-size:.9rem}.cmpn{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:1.05rem}ul.pr{list-style:none;padding:0;margin:4px 0 0}ul.pr li{margin:2px 0}ul.pr li.bad{color:var(--warn,#b3541e)}ul.pr li.ok{color:var(--mut)}ul.leg{list-style:none;padding:0;margin:4px 0 0}ul.leg li{display:flex;align-items:center;gap:10px;margin:6px 0}ul.leg svg{flex:0 0 28px}fieldset.lk{border:0;padding:0;margin:0;min-width:0}fieldset.lk:disabled input,fieldset.lk:disabled select,fieldset.lk:disabled textarea,fieldset.lk:disabled button{opacity:.6}.lockbar{width:100%;margin:0 0 12px;font-weight:600}.lockbar.open{background:#fbe3c4;color:#6b3a10}#toast{position:fixed;left:12px;right:12px;bottom:72px;display:flex;align-items:center;gap:10px;background:var(--tx);color:var(--bg);padding:10px 12px;border-radius:12px;z-index:20;box-shadow:0 4px 16px #0004}#toast span{flex:1;font-size:.9rem}#toast button{flex:0 0 auto}.stk{display:grid;grid-template-columns:1fr;gap:8px}.tile.on{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac) inset}
+.tile{border:1px solid var(--bd);border-radius:12px;padding:8px 10px;background:var(--bg);cursor:pointer;min-width:0}.trow{display:flex;align-items:center;gap:8px}.trow .tx{flex:1;min-width:0}.hs{flex:0 0 72px;width:72px;height:50px}.hz{display:flex;flex-direction:column;align-items:center;flex:0 0 72px}.shoes{display:inline-flex;gap:2px;flex:0 0 auto}.shoes svg{width:13px;height:12px;fill:var(--bd)}.shoes svg.on{fill:#b8862b}.tile .tb.nm{white-space:normal;overflow:visible;font-size:.95rem}.gsc{overflow-x:auto;-webkit-overflow-scrolling:touch}.why{display:inline-block;margin-top:8px;background:var(--ac2);color:var(--tx);border-radius:9px;padding:7px 12px;cursor:pointer;font-size:.9rem}.cmp{margin-top:12px;padding-top:10px;border-top:1px solid var(--bd)}.cmph{display:flex;align-items:center;gap:10px}.cmph b{flex:1}.cmph button{width:40px;height:36px;min-height:36px;padding:0;font-size:1.3rem}.cmph button:disabled{opacity:.35}.cmph span{min-width:5.5em;text-align:center;color:var(--mut);font-size:.9rem}.cmpn{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:1.05rem}ul.pr{list-style:none;padding:0;margin:4px 0 0}ul.pr li{margin:2px 0}ul.pr li.bad{color:var(--warn,#b3541e)}ul.pr li.ok{color:var(--mut)}ul.leg{list-style:none;padding:0;margin:4px 0 0}ul.leg li{display:flex;align-items:center;gap:10px;margin:6px 0}ul.leg svg{flex:0 0 28px}.stk{display:grid;grid-template-columns:1fr;gap:8px}.tile.on{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac) inset}
 .tile b{font-size:.9rem}.tile .tl{display:flex;align-items:center;gap:6px}.tile .ic{font-size:1.3rem;margin-right:6px}.tile .tb{display:flex;align-items:center;gap:6px;margin-top:4px;font-size:.85rem;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.tile .tb i{flex:0 0 10px;height:10px;border-radius:50%}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chips button{flex:0 1 auto;min-height:38px;padding:6px 10px;font-size:.85rem}
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom)}
@@ -66,52 +66,11 @@ if(!S.visit||new Date(S.visit)<new Date())S.visit=nextVisit();
 if(new Date(S.visit).getTime()>Date.now()+72*36e5)S.visit=nextVisit();
 snapVisit();
 S.from=''; // Von beginnt beim Start immer bei jetzt
-const APPV='56';
-// ---- Verlauf der Einstellungen (Rückgängig): vor jeder Änderung wird der alte Stand gemerkt (max. 10) ----
-const HK='eindeck-hist';
-const stab=v=>Array.isArray(v)?'['+v.map(stab).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().filter(k=>v[k]!==undefined).map(k=>JSON.stringify(k)+':'+stab(v[k])).join(',')+'}':JSON.stringify(v);
-const snapState=()=>{const{visit,vt,from,manual,photo,...r}=S;return stab(r)}; // feste Reihenfolge, damit gleiche Stände gleich aussehen
-let LAST=snapState();
-const loadHist=()=>{try{return JSON.parse(localStorage.getItem(HK))||[]}catch(e){return[]}};
-const HL={name:'Name',sens:'Empfindlichkeit',house:'Haltung',shelter:'Unterstand',outT:'Rausbringen',inT:'Reinholen',boxAdj:'Box wärmer',color:'Fellfarbe'};
-const fmtV=(k,v)=>k==='shelter'?(v?'ja':'nein'):k==='house'?({open:'draußen',box:'Box',mixed:'gemischt'}[v]||v):k==='color'?(COLORS[v]||v):k==='sens'?sl(v):String(v??'–');
-function diffDesc(a,b){const o=[],ha=a.horse||{},hb=b.horse||{};
- Object.keys(HL).forEach(k=>{if(JSON.stringify(ha[k])!==JSON.stringify(hb[k]))o.push(`${HL[k]} ${fmtV(k,ha[k])} → ${fmtV(k,hb[k])}`)});
- if(a.sunK!==b.sunK)o.push('Sonneneinfluss geändert');if(a.nSlots!==b.nSlots)o.push(`Anzahl Halbtage ${a.nSlots||3} → ${b.nSlots||3}`);
- if(JSON.stringify(a.loc)!==JSON.stringify(b.loc))o.push(`Standort ${a.loc?a.loc.name:'–'} → ${b.loc?b.loc.name:'–'}`);
- const A=a.blankets||[],B=b.blankets||[],ST={ok:'verfügbar',wash:'in der Wäsche',wet:'nass'};
- B.filter(x=>!A.some(y=>y.id===x.id)).forEach(x=>o.push(`Decke „${x.name}“ neu`));
- A.filter(x=>!B.some(y=>y.id===x.id)).forEach(x=>o.push(`Decke „${x.name}“ gelöscht`));
- B.forEach(x=>{const y=A.find(z=>z.id===x.id);if(!y||stab(x)===stab(y))return;
-  if(stab({...x,status:0})===stab({...y,status:0}))o.push(`„${x.name}“: ${ST[y.status||'ok']} → ${ST[x.status||'ok']}`);else o.push(`Decke „${x.name}“ geändert`)});
- return o.length?o.slice(0,2).join('; ')+(o.length>2?' …':''):'Einstellungen geändert'}
-let TOASTT=null;
-function toast(t,undo){let el=$('#toast');if(!el){el=document.createElement('div');el.id='toast';document.body.appendChild(el)}
- el.innerHTML=`<span>${esc(t)}</span>${undo?'<button class="s" onclick="undoLast()">Rückgängig</button>':''}`;el.hidden=false;clearTimeout(TOASTT);TOASTT=setTimeout(()=>el.hidden=true,7000)}
-const save=(quiet,tag)=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}
- const now=snapState();if(now===LAST)return;
- try{const H=loadHist(),prev=JSON.parse(LAST),cur=JSON.parse(now),key=diffDesc(prev,cur).split(' ')[0];
-  if(tag)H.unshift({t:Date.now(),s:LAST,d:tag,k:'restore'});
-  else if(H[0]&&Date.now()-H[0].t<15000&&H[0].k===key){if(H[0].s===now)H.shift();else H[0].d=diffDesc(JSON.parse(H[0].s),cur)} // schnelle Folgeänderung am selben Feld zusammenfassen
-  else H.unshift({t:Date.now(),s:LAST,d:diffDesc(prev,cur),k:key});
-  localStorage.setItem(HK,JSON.stringify(H.slice(0,10)));if(!quiet)toast('Geändert: '+H[0].d,true)}catch(e){}
- LAST=now};
-function restoreHist(i){const H=loadHist(),h=H[i];if(!h)return;const keep={visit:S.visit,vt:S.vt,from:S.from,manual:S.manual,photo:S.photo};
- S=Object.assign(JSON.parse(h.s),keep);save(true,'Zurückholen ('+h.d+')');toast('Wiederhergestellt: Stand vom '+new Date(h.t).toLocaleString('de-DE',{weekday:'short',day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'}),false);redrawAll()}
-function undoLast(){restoreHist(0)}
-function redrawAll(){const cur=['today','blk','horse','more'].find(x=>!$('#v-'+x).hidden)||'today';E=null;({today:drawToday,blk:drawB,horse:drawH,more:drawM})[cur]()}
-// ---- Schloss: Pferd, Decken und Mehr sind gesperrt, bis man entsperrt; nach 2 Min. ohne Eingabe oder beim Seitenwechsel wieder gesperrt ----
-let LOCK=true,LKT=null;
-const lockBar=()=>`<button class="lockbar${LOCK?'':' open'}" onclick="toggleLock()">${LOCK?'🔒 Gesperrt – zum Ändern antippen':'🔓 Entsperrt – antippen zum Sperren'}</button>`;
-function touchLock(){clearTimeout(LKT);if(!LOCK)LKT=setTimeout(()=>{LOCK=true;if(!E)redrawAll()},120000)}
-function toggleLock(){LOCK=!LOCK;touchLock();redrawAll()}
-function wrapLock(sel,keepOut){const el=$(sel),fs=document.createElement('fieldset');fs.className='lk';fs.disabled=LOCK;
- const out=keepOut?[...el.querySelectorAll(keepOut)]:[];[...el.childNodes].forEach(n=>{if(!out.includes(n))fs.appendChild(n)});
- el.prepend(fs);el.insertAdjacentHTML('afterbegin',lockBar());out.forEach(n=>el.appendChild(n))}
-document.addEventListener('input',touchLock,true);document.addEventListener('click',touchLock,true);
+const APPV='55';
+const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
 let W=null,err='',E=null,G=[];
 
-function tab(n){LOCK=true;clearTimeout(LKT);['today','blk','horse','more'].forEach(x=>{$('#v-'+x).hidden=x!==n;$('#t-'+x).classList.toggle('on',x===n)});
+function tab(n){['today','blk','horse','more'].forEach(x=>{$('#v-'+x).hidden=x!==n;$('#t-'+x).classList.toggle('on',x===n)});
 ({today:drawToday,blk:drawB,horse:drawH,more:drawM})[n]()}
 
 async function load(){
@@ -459,16 +418,16 @@ function drawB(){
   <p class="mut">Für zwei Schichten: Beide Decken müssen etwas beitragen: eine Decke ohne Füllung (0 g) wird nur kombiniert, wenn sie etwas ergänzt, zum Beispiel wasserdicht über einer nicht wasserdichten Decke.</p>
   ${S.blankets.some(x=>x.type==='liner')?`<label>Passende Liner</label>${S.blankets.filter(x=>x.type==='liner').map(x=>`<label><input type="checkbox" class="lk" value="${x.id}"${(x.fits||[]).includes(b.id)?' checked':''}>${esc(x.name)} (${x.grams} g)</label>`).join('')}`:''}</div>
   <div class="row"><button onclick="saveB()">Speichern</button><button class="s" onclick="E=null;drawB()">Abbrechen</button>${b.isNew?'':'<button class="d" onclick="delB()">Löschen</button>'}</div></div>`;return}
- el.innerHTML=lockBar()+`<div class="card"><h2>Meine Decken</h2><div class="it"><div style="flex:1"><b>Keine Decke</b><div class="mut">${noneTxt()}</div></div></div>${S.blankets.map(b=>{const nm=ids=>ids.map(i=>(S.blankets.find(x=>x.id===i)||{}).name).filter(Boolean).map(esc).join(', ');
+ el.innerHTML=`<div class="card"><h2>Meine Decken</h2><div class="it"><div style="flex:1"><b>Keine Decke</b><div class="mut">${noneTxt()}</div></div></div>${S.blankets.map(b=>{const nm=ids=>ids.map(i=>(S.blankets.find(x=>x.id===i)||{}).name).filter(Boolean).map(esc).join(', ');
   const lin=S.blankets.filter(x=>x.type==='liner'&&(x.fits||[]).includes(b.id)).map(x=>x.id);
   const info=b.type==='liner'?`Liner · ${b.grams} g<br>${linerTxt(b)}${(b.fits||[]).length?'<br>passt zu: '+nm(b.fits):''}`:`${b.grams} g · ${COLORS[b.color||'mid'].toLowerCase()} · ${PLACE[b.place]}${lf(b).under&&lf(b).over?' · unten/oben':lf(b).under?' · Unterdecke':' · Oberdecke'}${b.waterproof?' · wasserdicht':''}<br>${rangeTxt(b)}${lin.length?'<br>Liner: '+nm(lin):''}`;
-  return`<div class="it"><div${LOCK?'':` onclick="editB(${b.id})"`} style="flex:1${LOCK?'':';cursor:pointer'}"><b>${esc(b.name)}</b><div class="mut">${info}</div></div>
+  return`<div class="it"><div onclick="editB(${b.id})" style="flex:1"><b>${esc(b.name)}</b><div class="mut">${info}</div></div>
   <select onchange="setSt(${b.id},this.value)"><option value="ok"${b.status==='ok'?' selected':''}>verfügbar</option><option value="wash"${b.status==='wash'?' selected':''}>in der Wäsche</option><option value="wet"${b.status==='wet'?' selected':''}>nass</option></select></div>`}).join('')||'<p class="mut">Noch keine Decken. Lege deine erste an.</p>'}
-  ${LOCK?'<p class="mut">Status (verfügbar / Wäsche / nass) lässt sich auch gesperrt ändern.</p>':'<div class="row"><button onclick="editB()">+ Decke hinzufügen</button></div>'}</div>`}
+  <div class="row"><button onclick="editB()">+ Decke hinzufügen</button></div></div>`}
 function linerTxt(b){return`Wärmewert +${r1(+b.ins||0)} °C, erweitert den Bereich der Decke um ${r1(+b.ins||0)} °C`}
 function noneTxt(){return`für ${esc(S.horse.name||'dein Pferd')}: ab gefühlt ${r0(BASE-sens())} °C (Empfindlichkeit im Pferdeprofil)`}
 function rangeTxt(b){const[lo,hi]=bRange(+b.ins||0);return`Wärmewert +${r1(+b.ins||0)} · für ${esc(S.horse.name||'dein Pferd')}: ${r0(lo)} bis ${r0(hi)} °C`}
-function editB(id){if(LOCK)return;setTimeout(()=>{if($('#bi'))insTxt()},0);E=id?{...S.blankets.find(b=>b.id===id)}:{id:Date.now(),isNew:1,name:'',type:'rain',grams:0,ins:0,place:'outdoor',color:'mid',waterproof:true,wind:false,neck:false,status:'ok'};drawB()}
+function editB(id){setTimeout(()=>{if($('#bi'))insTxt()},0);E=id?{...S.blankets.find(b=>b.id===id)}:{id:Date.now(),isNew:1,name:'',type:'rain',grams:0,ins:0,place:'outdoor',color:'mid',waterproof:true,wind:false,neck:false,status:'ok'};drawB()}
 function typeCh(){const l=$('#bt').value==='liner';$('#lonly').hidden=!l;$('#bonly').hidden=l;gch()}
 function gch(){$('#bi').value=insDef($('#bt').value,$('#bg').value);insTxt()}
 function insTxt(){const v=parseFloat($('#bi').value)||0,[lo,hi]=bRange(v),t=$('#bitx');if(!t)return;
@@ -496,7 +455,8 @@ function drawH(){const h=S.horse,o=(a,v)=>Object.entries(a).map(([k,t])=>`<optio
  ${h.house==='mixed'?`<div class="g2"><div><label>Rausbringen um</label><input type="time" value="${h.outT}" onchange="S.horse.outT=this.value||'07:00';save()"></div><div><label>Reinholen um</label><input type="time" value="${h.inT}" onchange="S.horse.inT=this.value||'17:00';save()"></div></div>`:''}
  ${h.house!=='open'?`<label>Box ist wärmer als draußen um (°C)</label><input type="number" step=".5" value="${h.boxAdj}" onchange="S.horse.boxAdj=parseFloat(this.value)||0;save()"><p class="mut">Wind und Regen werden in der Box nicht gerechnet.</p>`:''}
  <label><input type="checkbox"${h.shelter?' checked':''} onchange="S.horse.shelter=this.checked;save()">Unterstand / Witterungsschutz draußen vorhanden</label>
- <p class="mut">Nach einer Schur einfach die Empfindlichkeit verstellen, die Empfehlung passt sich sofort an.</p></div>`;wrapLock('#v-horse')}
+ <p class="mut">Nach einer Schur einfach die Empfindlichkeit verstellen, die Empfehlung passt sich sofort an.</p></div>`}
+
 function drawM(){$('#v-more').innerHTML=`<div class="card"><h2>Standort</h2><p class="mut">Aktuell: ${S.loc?esc(S.loc.name):'nicht gesetzt'}</p>
  <div class="row"><button onclick="gps()">GPS verwenden</button></div>
  <label>Oder Ort suchen</label><div class="row"><input id="q" placeholder="z. B. Hamburg"><button class="s" style="flex:0" onclick="srch()">Suchen</button></div><div id="res"></div></div>
@@ -504,8 +464,6 @@ function drawM(){$('#v-more').innerHTML=`<div class="card"><h2>Standort</h2><p c
  <select onchange="S.sunK=+this.value;save();drawM()">${[[0,'aus'],[.5,'schwach'],[1,'normal'],[1.5,'stark']].map(x=>`<option value="${x[0]}"${+S.sunK===x[0]?' selected':''}>${x[1]}</option>`).join('')}</select></div>
  <div class="card"><h2>Anzeige</h2><label>Anzahl Halbtage auf der Startseite</label>
  <select onchange="S.nSlots=+this.value;save()">${[2,3,4,5,6,7,8].map(n=>`<option value="${n}"${(+S.nSlots||3)===n?' selected':''}>${n}</option>`).join('')}</select></div>
- <div class="card"><h2>Frühere Stände</h2><p class="mut">Vor jeder Änderung merkt sich die App den alten Stand (die letzten 10).</p>
- ${(()=>{const H=loadHist();return H.length?H.map((h,i)=>`<div class="it"><div style="flex:1"><b>${new Date(h.t).toLocaleString('de-DE',{weekday:'short',day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}</b><div class="mut">Stand vor: ${esc(h.d)}</div></div><button class="s" onclick="restoreHist(${i})">Zurückholen</button></div>`).join(''):'<p class="mut">Noch keine Änderungen gemerkt.</p>'})()}</div>
  <div class="card"><h2>Sicherung als Text</h2><p class="mut">Pferd und Decken als Text exportieren oder auf einem anderen Handy importieren.</p>
  <textarea id="bk" rows="4" autocapitalize="off" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
  <div class="row"><button class="s" onclick="expo()">Code erzeugen</button><button class="s" onclick="shareCode()">Teilen (z. B. Threema)</button></div>
@@ -515,9 +473,9 @@ function drawM(){$('#v-more').innerHTML=`<div class="card"><h2>Standort</h2><p c
  <div class="row"><button class="s" onclick="shareCSV()">Beide teilen</button><button onclick="$('#csvf').click()">CSV importieren</button></div>
  <input id="csvf" type="file" accept=".csv,text/csv,text/plain,text/comma-separated-values" multiple hidden onchange="impCSV(this)"><p id="csvmsg" class="mut"></p></div>
 
- <div class="card fbk"><h2>Feedback</h2><p class="mut">Ein Wunsch, eine Idee oder ein Fehler? Wir freuen uns über deine Nachricht.</p>
+ <div class="card"><h2>Feedback</h2><p class="mut">Ein Wunsch, eine Idee oder ein Fehler? Wir freuen uns über deine Nachricht.</p>
  <div class="row"><a class="btn" href="https://tally.so/r/xVVA05?version=${APPV}" target="_blank" rel="noopener">Feedback oder Wunsch senden</a></div></div>
- <p class="mut fbk">Version ${APPV} · Wetterdaten: Open-Meteo.com. Alle Daten bleiben auf deinem Gerät. Die Empfehlung ist eine Entscheidungshilfe, prüfe dein Pferd immer selbst (Nacken und Flanke fühlen).</p>`;wrapLock('#v-more','.fbk')}
+ <p class="mut">Version ${APPV} · Wetterdaten: Open-Meteo.com. Alle Daten bleiben auf deinem Gerät. Die Empfehlung ist eine Entscheidungshilfe, prüfe dein Pferd immer selbst (Nacken und Flanke fühlen).</p>`}
 function gps(){navigator.geolocation?navigator.geolocation.getCurrentPosition(p=>{S.loc={lat:p.coords.latitude,lon:p.coords.longitude,name:'GPS-Standort'};save();drawM();load()},()=>alert('Standort nicht verfügbar. Bitte Ort suchen.')):alert('Kein GPS verfügbar.')}
 async function srch(){const q=$('#q').value.trim();if(!q)return;
  try{const j=await(await fetch('https://geocoding-api.open-meteo.com/v1/search?count=5&language=de&name='+encodeURIComponent(q))).json();G=j.results||[];
